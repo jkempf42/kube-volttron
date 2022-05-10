@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: vbac
+    version: v2
+  name: vbac
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vbac
+  template:
+    metadata:
+      labels:
+        app: vbac
+        version: v2
+      name: vbac
+      annotations:
+        k8s.v1.cni.cncf.io/networks: |-
+            [{
+            "name": "bacnet",
+            "default-route": ["192.168.0.118"]
+            }]
+    spec:
+      hostname: vbac
+      containers:
+        - name: vbac
+          image: jkempf42/public-repo:v2-dev.vbac
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: bacnet
+              mountPath: /home/volttron/configs/bacnet
+            - name: platform-driver
+              mountPath: /home/volttron/.volttron/configuration_store
+      volumes:
+        - name: bacnet
+          configMap:
+            name: bacnet-config
+        - name: platform-driver
+          configMap:
+            name: platform-driver-config
+            
+
+          

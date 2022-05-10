@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bacnet-config
+data:
+  sim-AHU.config: |-
+    {
+        "driver_config": {"device_address": "192.168.0.118",
+                          "device_id": 3056936,
+                          "min_priority": 10,
+                          "max_per_request": 24
+                          },
+        "driver_type": "bacnet",
+        "registry_config":"config://bacnet.csv",
+        "interval": 5,
+        "timezone": "US/Pacific",
+        "heart_beat_point": "heartbeat"
+    }
+  sim-AHU.csv: |-
+    Reference Point Name,Volttron Point Name,Units,Unit Details,BACnet Object Type,Property,Writable,Index,Write Priority,Notes
+    DPR0-O,DPR0-O,percent,(default 0.0),analogOutput,presentValue,FALSE,0,,VAV Box 0 Damper Output
+    DPR1-O,DPR1-O,percent,(default 0.0),analogOutput,presentValue,FALSE,1,,VAV Box 1 Damper Output
+    DPR2-O,DPR2-O,percent,(default 0.0),analogOutput,presentValue,FALSE,2,,VAV Box 2 Damper Output
+    DPR3-O,DPR3-O,percent,(default 0.0),analogOutput,presentValue,FALSE,3,,VAV Box 3 Damper Output
+    DPR4-O,DPR4-O,percent,(default 0.0),analogOutput,presentValue,FALSE,4,,VAV Box 4 Damper Output
+    DPR5-O,DPR5-O,percent,(default 0.0),analogOutput,presentValue,FALSE,5,,VAV Box 5 Damper Output
+    DPR6-O,DPR6-O,percent,(default 0.0),analogOutput,presentValue,FALSE,6,,VAV Box 6 Damper Output
+    DPR7-O,DPR7-O,percent,(default 0.0),analogOutput,presentValue,FALSE,7,,VAV Box 7 Damper Output
+    DPR8-O,DPR8-O,percent,(default 0.0),analogOutput,presentValue,FALSE,8,,VAV Box 8 Damper Output
+    DPR9-O,DPR9-O,percent,(default 0.0),analogOutput,presentValue,FALSE,9,,VAV Box 9 Damper Output
+    DAP-SP,DAP-SP,inchesOfWater,(default 0.0),analogValue,presentValue,FALSE,0,,AHU Duct Pressure Setpoint
+    SF-S,SF-S,Enum,0-1 (default 0),binaryValue,presentValue,FALSE,0,,AHU Supply Fan Status Writeable for testing

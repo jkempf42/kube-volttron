@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: vremote
+    version: v2
+  name: vremote
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vremote
+  template:
+    metadata:
+      labels:
+        app: vremote
+    spec:
+      hostname: vremote
+      containers:
+        - name: vremote
+          image: jkempf42/public-repo:v2-dev.vremote-local
+          imagePullPolicy: Always
+
+           

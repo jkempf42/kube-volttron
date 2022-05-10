@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: vremote
+    version: v2
+  name: vremote
+spec:
+  selector:
+    app: vremote
+  ports:
+    - name: vremote
+      port: 8443
+      protocol: TCP
+      targetPort: 8443
+    - name: vip
+      port: 22916
+      protocol: TCP
+      targetPort: 22916
+  type: ClusterIP

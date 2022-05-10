@@ -40,7 +40,9 @@ to communicate with devices on the host IP subnet.
 The gateway pod is configured with an additional network interface using some advanced features of the CNI. The [Multus
 multi-interface CNI driver](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/configuration.md) 
 connects up both the intra-cluster Flannel network and a second interface imported from
-the second interface on the gateway host into the gateway pod. 
+the second interface on the gateway host into the gateway pod. The Multus
+git distro is already incorporated by reference into the gateway-node in the
+subdirectory multus-cni.
 This means the host VM or OS must have two Ethernet interfaces, one
 connected to the local area network and the Internet through a router and one that is absorbed into the gateway
 pod when it is created. [^1] A K8s yaml manifest is provided to create `NetworkAttachementDefinition` K8s CNI 

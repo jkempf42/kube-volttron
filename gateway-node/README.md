@@ -1,6 +1,7 @@
 # Deploying the Volttron K8s Gateway Node
 
-The gateway node sits at a remote site, like in a building or at a solar farm,
+The gateway node sits at a remote site, like in a building or at a solar farm
+or a EV charger,
 connected to the site's local area network with routing to the Internet.
 A gateway pod with a Volttron deployment acts as an intermediary between the
 IoT devices running on site and the Volttron Central pod running on the
@@ -19,8 +20,8 @@ actual device and no additional network configuration.
 
 - vbac - a Volttron microservice that handles devices using the 
 [BACnet protocol](http://www.bacnet.org/). This device requires at most one device
-that responds to BACnet. A [simulated AHU device](https://github.com/bbartling/building-automation-web-weather) incorporated by copy as sim_AHU.py here, based on the [BAC0](https://bac0.readthedocs.io/en/latest/) package by Christian Tremblay, is provided courtesy of Ben Barting, see below for more on how to deploy it. The vbac microservice requires additional network configuration which
-is discussed in the next section.
+that responds to BACnet. A [simulated AHU device](https://github.com/bbartling/building-automation-web-weather) incorporated by copy as sim_AHU.py here, based on the [BAC0](https://bac0.readthedocs.io/en/latest/) package by Christian Tremblay, is provided courtesy of Ben Barting, see below for more on how to deploy it. The vbac microservice requires additional network configuration an
+overview of which is given is discussed in the next section.
 
 
 ## BACnet gateway node network architecture
@@ -32,8 +33,8 @@ for intra cluster networking between pods. Flannel constructs an isolated overla
 with CIDR 10.244.0.0/16 using the [VXLAN overlay protocol](https://datatracker.ietf.org/doc/html/rfc7348), and there
 is no routing between pods inside the cluster and devices outside by default, though pods on the gateway node 
 can communicate with pods on other nodes in the cluster, including the Volttron Central pod in the cloud, through 
-the overlay.The figure below illustrates how the BACnet K8s cluster network architecture allows the gateway pod
-to communicate with devices on the host IP subnet.
+the overlay. In the figure below, the BACnet K8s cluster network architecture allows the vbac pod to communicate with devices on the host IP subnet by 
+creating another interface in the pod connected directly to the host network.
 
 ![BACnet network architecture](image/bn-gateway-node-arch-flannel.png)
 
@@ -41,8 +42,8 @@ The gateway pod is configured with an additional network interface using some ad
 multi-interface CNI driver](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/configuration.md) 
 connects up both the intra-cluster Flannel network and a second interface imported from
 the second interface on the gateway host into the gateway pod. The Multus
-git distro is already incorporated by reference into the gateway-node in the
-subdirectory multus-cni.
+git distro is already incorporated by reference into the gateway-node directory
+via the subdirectory multus-cni.
 This means the host VM or OS must have two Ethernet interfaces, one
 connected to the local area network and the Internet through a router and one that is absorbed into the gateway
 pod when it is created. [^1] A K8s yaml manifest is provided to create `NetworkAttachementDefinition` K8s CNI 
@@ -53,7 +54,7 @@ with devices (both simulated
 and real) running on the host IP subnet. The Volttron BACnet Proxy Agent communicates with the Volttron Platform
 Driver Agent via the VIP bus running on the Unix socket 22916. Similarly, the other Volttron agents communicate
 amongst themselves using the VIP bus. The Actuator Agent, Forwarding Historian, and Volttron Central Platform Agent
-communicate with the Volttron Central pod using HTTPs over the intra cluster network on port 8443. T
+communicate with the Volttron Central pod using HTTPs over the intra cluster network on port 8443. 
 Note that at this time the Volttron BACnet Proxy Agent does not
 conduct BACnet broadcast (WhoIs/IAm) but this architecture should enable broadcast from and to the gateway
 pod in the future. Without the second interface, the gateway pod cannot communicate with BACnet devices
@@ -62,8 +63,7 @@ on the host IP subnet. [^2]
 [^1] The installation directions below walk you through creating a VM with VirtualBox that has an additional 
 interface.
 
-[^2] Some CNI drivers that do not use overlays ("flat" drivers) may allow broadcast and direct access to the 
-host network, this is an area for future work.
+[^2] Some CNI drivers that do not use overlays ("flat" drivers) may allow broadcast and direct access to the host network, this is an area for future work.
 
 ## Preparing the base VM or operating system
 
@@ -72,7 +72,7 @@ a two interface gateway pod. How you configure an additional
 interface depends on what 
 operating system and/or VM manager you are using. Kube-volttron was developed on 
 Ubuntu 20.04 using the VirtualBox VMM, so the directions for adding an 
-additional interface are explained in detail in the following subsections.
+additional interface to a VirtualBox VM are explained in detail in the following subsections.
 
 ### Clone a VM or import an ISO for a new one.
 Clone an existing VM using VirtualBox by right clicking on the VM in the left side menu bar and choosing *Clone* from the VM menu.
@@ -106,7 +106,7 @@ worker nodes.
 
 ## Deploying K8s on the node.
 
-`kubeadm` is the recommended deployment tool for K8s on the ndoe, because many other K8s distros are opinionated
+`kubeadm` is the recommended deployment tool for K8s on the node, because many other K8s distros are opinionated
 about networking in specific ways that may be incompatible 
 with running a pod having a second interface onto the host subnet. You can find instructions for
 installing K8s with `kubeadm` [here](https://computingforgeeks.com/deploy-kubernetes-cluster-on-ubuntu-with-kubeadm/). 
@@ -146,8 +146,7 @@ Multus requires IP address management (ipam). We use DHCP to provision the
 address from the DHCP server running on the host subnet.
 
 First, edit `/etc/sysctl.conf` and uncomment `net.ipv4.ip_forward=1` and 
-`net.ipv6.conf.all.forwarding=1` to enable routing on the host after reboot and
-use the command:
+`net.ipv6.conf.all.forwarding=1` to enable routing on the host after reboot, then use the command:
 
 	sudo sysctl <routing variable>=1
 
@@ -171,7 +170,7 @@ doesn't exist.
 - `stop-dhcpd.sh` - Kills the CNI DHCP relay daemon
 
 [This page](https://www.cni.dev/plugins/current/ipam/dhcp/)
-provides more information on enabling DHCP ipam for K8s.
+provides more information on enabling DHCP ipam for K8s CNI.
 
 ## Kubernetes manifests for deploying gateway pods
 
@@ -211,7 +210,7 @@ only for development, testing, and demo purposes. In the actual Volttron
 Central deployment in the cloud, this should be replaced with a K8s `Ingress` or
 `Gateway` object.
 
-### Vremote microservice with the fake driver manifests
+### Manifests for deploying the vremote microservice with the fake driver 
 
 The vremote microservice requires the following two manifests:
 
@@ -251,8 +250,8 @@ The K8s `Configmap` object provides a way to inject configuration data into a co
 Container images can be distributed without the final configuration in them, and 
 then a customized configuration specific to the particular deployment environment can be injected when
 the container is deployed.
-This is actually contrary to the way the original volttron-docker distro does configuration. A
-Volttron deployment is built and configured on the machine where it is to run from scratch. However, the
+Because Volttron was originally build around a monolithic architecture, the original volttron-docker distro does configuration by deploying all the agents into a container with their all of their deployment environment configuration
+in them. Every Volttron deployment is built from scratch and configured on the machine where it will run. However, the
 microservice-volttron distro has been engineered to allow redistributable containers. 
 
 The two yaml files defining `Configmap` objects are:
@@ -277,8 +276,8 @@ manifests:
 
 - `vbac-deploy.yml`: Creates a one pod `Deployment` of the vbac microservice
 running the Volttron BACnet Proxy Agent, with a forwarding historian to send data to 
-the Volttron Central pod historian database. This manifest needs to be customized to
-your network as described below.
+the Volttron Central pod historian database, and an actuator agent to receive commands from Volttron Central. 
+This manifest needs to be customized to your network as described below.
 
 - `vbac-service.yml`: A `ClusterIP` type service for the vbac pod, with 
 HTTP and VIP ports defined. There is no external IP definition for the 
@@ -323,11 +322,11 @@ If the pod is running, you should see something like:
 The first time you start it, it may take a while to download the image.
 
 You can test whether the Volttron Central microservice is running by 
-using your browser to browse to the Web page. Browse to the URL
+using your browser running on the host to browse to the Web page. Browse to the URL
 `https://<host IP address>:8443/index.html`. This will bring up the
 Volttron Central admin splash page:
 
-![Volttron Central splash page](image/vc-splash-page.png)
+![Volttron Central splash page](image/vc-admin-splash.png)
 
 Click on *Login to Administration Area* to bring up the master admin
 config page, where you can set the admin username and password:
@@ -481,8 +480,7 @@ Create the vbac `Service` as follows:
 	kubectl apply -f vbac-service.yml
 	
 This creates a `ClusterIP` service for vbac on both the http (port 8443) and the VIP bus (port 22916). 
-The VIP bus port
-is primarily a Unix socket and so not visible outside the pod, but is reserved anyway.
+VIP communicates primarily through a Unix socket and so not visible outside the pod, but is reserved anyway.
 
 Create the `bacnet` `NetworkAttachmentDescription` as follows:
 
@@ -527,6 +525,10 @@ If you run into trouble deploying one of the microservice `Deployments`, you can
 If you are having problems with networking or service discovery, you can
 troubleshoot by exec-ing into one of the pods and using the Ubuntu 
 Linux networking tools. 
+
+	kubectl exec -it <pod name? -- /bin/bash
+	
+
 
 
 

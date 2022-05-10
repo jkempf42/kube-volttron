@@ -9,7 +9,7 @@ jkempf42/public-repo Docker image repo. Microservice-volttron allows subsets of 
 to be packaged into redistributable binary container images that are preconfigured, with
 the final configuration being done in the deployment context. The result is a re-architecting of
 Volttron from a monolithic, deploy and run on one machine application to a application with a  microservices 
-architecture. If you want to build your on Volttron microservices images, check out the
+architecture. If you want to build your own Volttron microservices images, check out the
 microservice-volttron repo. Both kube-volttron and microservice-volttron have been built on ubuntu 20.04
 and they are not guaranteed to and probably won't work on any other operating system.
 
@@ -27,7 +27,7 @@ with microservices, the fake driver (not a real protocol) which comes with the V
 (vremote microservice) and and BACnet (vbac
 microservice). A simulated AHU device script is also provided for the vbac microservice. The configuration for
 the AHU device is baked into the vbac service, so if you want to add any additional BACnet devices you will
-have to build another container image.
+have to build another container image. The gateway-node can be deployed standalone for testing purposes.
 
 A caveat about vcentral, vremote, and vbac images: they have been build with an ubuntu 20.04 image loaded with
 debugging tools, especially for network debugging (traceroute, ping, dig, etc.) and so may not be suitable for

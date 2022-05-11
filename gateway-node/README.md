@@ -90,7 +90,8 @@ Be sure your first interface is a *Bridged Adaptor* and not NAT or anything else
 
 Click on the *Adaptor 2* tab then
 click the check box marked *Enable Network Adaptor*. Select the 
-*Bridged Adaptor* for the network type.
+*Bridged Adaptor* for the network type. Click on the *Advanced* arrow and make sure the *Cable Connected* 
+checkbox is checked.
 
 ### Save the configuration
 
@@ -104,59 +105,142 @@ If you already have a K8s node deployed in the cloud, you should use the [BYOH
 ClusterAPI](https://github.com/vmware-tanzu/cluster-api-provider-bringyourownhost) operator to deploy and provision your gateway node, see the parent README and you can skip the next section since ClusterAPI handles K8s installation on
 worker nodes.
 
-## Deploying K8s on the node.
+## Preinstallation host config
+
+Prior to installing K8s, be sure to set the hostname on the node:
+
+	hostnamectl set-hostname <new-hostname>
+	
+and confirm the change with:
+
+	hostnamectl
+
+You should not have to reboot the node.
+
+Find your host IP addresses using `ifconfig` and note the IP address having the lowest host number (last field).
+For example, on my machine the first interface has host number 125 and is named `enp0s3` while the second interface
+has host number 126 and has name `enp0s8`. Kubernetes will run on the first interface while the second interface 
+will become part of the gateway pod.
+
+Make a directory to put in downloaded files and other artifacts of the cluster setup:
+
+	mkdir kubeadm-install
+	
+
+## Deploying K8s on the gateway node.
 
 `kubeadm` is the recommended deployment tool for K8s on the node, because many other K8s distros are opinionated
 about networking in specific ways that may be incompatible 
-with running a pod having a second interface onto the host subnet. You can find instructions for
+with running a pod having a second interface onto the host subnet. 
+The cluster installation process should take about 45 minutes, and if something goes wrong, you should simply delete
+your VM (if you are using a VM) and clone a new one or reinstall the OS and start over because it is 
+very timeconsuming to troubleshoot a broken installation. 
+You can find instructions for
 installing K8s with `kubeadm` [here](https://computingforgeeks.com/deploy-kubernetes-cluster-on-ubuntu-with-kubeadm/). 
 The page includes instructions for installing
 the Docker runtime but be sure to also install the Mirantis docker shim,
-since the shim is no longer distributed with K8s by default.
+since the shim is no longer distributed with K8s by default. A [link](https://computingforgeeks.com/install-mirantis-cri-dockerd-as-docker-engine-shim-for-kubernetes/) to the instructions for installing the shim is 
+on the kubeadm installation page at the place in the process where you need to install it 
+but is also included here for reference.
 
-For cluster networking, you can use whatever CNI provider you like, but I used
-Flannel, which is the simplest (constructs an overlay network in the 10.244.0.0/16
-private address space). Instructions for installing Flannel are [here](https://github.com/flannel-io/flannel#flannel).
+When when you use kubeadm to pull images, be sure to include the --cri-socket for Docker:
 
-After `kubeadm` is done, it will print out a command for adding a node to the
-cluster. While it isn't likely you will need this for the gateway node, best to 
-save it into a file in case you do.
+	sudo kubeadm config images pull --cri-socket=unix:///run/cri-dockerd.sock
+	
+The socket file needs to be formatted as a URL, otherwise kubeadm will complain.
+
+The `kubeadm init` command also needs to be run as root:
+
+	sudo kubeadm init --control-plane-endpoint <host IP address w. lowest host number> --pod-network-cidr 10.244.0.0/16  --cri-socket unix:///run/cri-dockerd.sock
+
+The pod network CIDR given above is for Flannel, which we will use as the CNI provider for the intra-pod network.
+
+Near the end of the printout, `kubeadm` prints instructions for enabling nonroot users to access the cluster. Be sure
+to run them before going any further.
+
+At the end of the output for `kubeadm init`, instructions for adding a worker node will be printed, for example:
+
+	You can now join any number of control-plane nodes by copying certificate authorities
+	and service account keys on each node and then running the following as root:
+
+	kubeadm join <host IP address w. lowest host number>:6443 --token zz7oz0.levc66osara7u9ij \
+		--discovery-token-ca-cert-hash sha256:be2301e4a26f33a0d408dc49068765493da2a2dde76784a4ca3af5dfee3fe031 \
+		--control-plane 
+
+	Then you can join any number of worker nodes by running the following on each as root:
+
+	kubeadm join 192.168.0.125:6443 --token zz7oz0.levc66osara7u9ij \
+		--discovery-token-ca-cert-hash sha256:be2301e4a26f33a0d408dc49068765493da2a2dde76784a4ca3af5dfee3fe031 
+
+You should note these down. While it isn't likely that you will need to add another node, best to save it in a file
+just in case. 
+
+For cluster networking, you should use Flannel, which is the simplest (constructs an overlay network in the 10.244.0.0/16
+private address space). To install Flannel, type the following into a shell window:
+
+	kubectl apply -f https://github.com/coreos/flannel/raw/master/Documentation/kube-flannel.yml
 
 You also need to remove the taint on the K8s control node that prohibits app 
 workloads from running on it, since the gateway cluster only has one node. 
 Use the following command:
 
-	kubectl taint nodes <control-node-hostname> node-role.kubernetes.io/master-
+	kubectl taint node <node host-name> node-role.kubernetes.io/master-
 	
+## Clone the kube-volttron git repo
+
+If you haven't already, clone the kube-volttron git repo:
+
+	git clone https://github.com/jak42/kube-volttron/
+	
+Change to the `gateway-node` subdirectory:
+
+	cd kube-volttron/gateway-node
+
 ## Installing the Multus multi-network CNI driver
 
 In order to deploy a multi-interface pod, you need to install the Multus CNI driver.
-Instructions for installing Multus are [here](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md). There are other options for 
+Complete instructions for installing Multus including technical background are [here](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md). Your clone of the `kube-volttron` repo should have cloned Multus as a 
+submodule. 
+
+To install Multus, change to the `multus-cni` subdirectory and install the Multus custom resource:
+
+	cd multus-cni
+	cat ./deployments/multus-daemonset-thick-plugin.yml | kubectl apply -f -
+
+Wait for a few minutes, then check that the pods are running:
+
+	kubectl get pods --all-namespaces | grep -i multus
+
+You should see output like this:
+
+	kube-system   kube-multus-ds-zrv4j           1/1     Running   6 (13h ago)    24d
+
+Note that there is no way to uninstall Multus once you have installed it, so don't install it on a K8s cluster
+unless you want to run multiple CNI plugins.
+
+There are other options for 
 handling multi-interface pods, but they are all complicated and primarily for
 software defined networking telcom use cases. We only need one pod with two 
 interfaces, one for the intra cluster pod network and one for talking to BACnet devices on the host subnet.
 
-Note that there is no way to uninstall Multus once you have installed it, so don't install it on a K8s cluster
-where you don't want to run multiple CNI drivers.
-
-
 ## Configuring the host network to support a multi-interface pod
 
-Multus requires IP address management (ipam). We use DHCP to provision the
-address from the DHCP server running on the host subnet.
-
-First, edit `/etc/sysctl.conf` and uncomment `net.ipv4.ip_forward=1` and 
-`net.ipv6.conf.all.forwarding=1` to enable routing on the host after reboot, then use the command:
+First, we need to enable routing on the host. Edit `/etc/sysctl.conf` and uncomment `net.ipv4.ip_forward=1` and 
+`net.ipv6.conf.all.forwarding=1` to enable routing on the host after reboot, if they aren't already, 
+then use the command:
 
 	sudo sysctl <routing variable>=1
 
-where `<routing variable>` is  `net.ipv4.ip_forward` and `net.ipv6.conf.all.forwarding` to enable routing in the running host.
+where `<routing variable>` is  `net.ipv4.ip_forward` and `net.ipv6.conf.all.forwarding` to enable routing 
+in the running host.
 
 You can test whether your configuration has worked by running:
 
 	sudo sysctl -a | grep <routing variable>
 
-Unfortunately, Multus cannot find 
+Multus requires IP address management (ipam) to be specified for the second pod interface. 
+Since we want the second interface to be part of the host network, we need to provision the IP address
+from the host subnet DHCP server. Unfortunately, Multus cannot find 
 the DHCP server on your host subnet without a relay, so we need
 to start the CNI DHCP relay on the host. Two utility scripts are provided 
 for this purpose. The scripts run commands with `sudo` so you will be prompted 
@@ -175,7 +259,7 @@ provides more information on enabling DHCP ipam for K8s CNI.
 ## Kubernetes manifests for deploying gateway pods
 
 A collection of Kubernetes yaml manifests are provided for testing and demos.
-In addition to manifests for the two gateway pods, a manifest is provided 
+In addition to manifests for the two IoT gateway pods, a manifest is provided 
 for deploying a Volttron Central pod including the SQL Lite historian, in case
 you want to try out the gateway node standalone. This section describes the
 manifests. 
@@ -183,22 +267,23 @@ manifests.
 Note that if you decide to develop your own Volttron microservice containers, 
 you will need to replace the name of the container image in the manifests under the 
 `spec.template.containers.image` key, which is currently set to
-`jkempf41/public-repo:<image type tag>`, with your own repository and image tag.
+`jkempf42/public-repo:<image type tag>`, with your own repository and image tag.
 
 ### Volttron Central microservice manifests
 
 The Volttron Central microservice requires the following two manifests: 
 
 - `vcentral-deploy.yml`: This sets up a K8s `Deployment` for a vcentral Volttron Central microservice with an 
-SQL Lite historian having the database embedded inside the container. 
-The deployment has only one replica since the database is not replicated. The
-K8s `Deployment` restarts the pod if it crashes.
+SQL Lite historian. 
+The deployment has only one replica. The
+K8s `Deployment` restarts the pod if it crashes. The database is not exported from the container so the data won't 
+be saved if you bring down the gateway node.
 
 - `vcentral-service.yml`: This defines a `ClusterIP` type service for vcentral, but
 with an external IP address so that you can access the Volttron Central 
 Web UI from a 
 browser running on the host for testing. You should replace the IP address in
-the manifest, the array value bound to the key `spec.externalIPs`, with the IP address of your host machine. 
+the manifest, the array value of the key `spec.externalIPs`, with the IP address of your host machine. 
 Currently this is set to `192.168.0.118`. The Volttron Central Web UI will run on the standard Volttron port,
 8443, on your host machine so be sure there is no other service running on
 that port. The service manifest also contains a port definition for the 
@@ -206,8 +291,8 @@ VIP bus port at port number 22916 so the gateway pods can connect to
 the VIP bus (individual pods in a K8s cluster have no access to a common Unix
 socket which is how agents typically communicate on the VIP bus). 
 Note that the `externalIPs` configuration is
-only for development, testing, and demo purposes. In the actual Volttron
-Central deployment in the cloud, this should be replaced with a K8s `Ingress` or
+only for development, testing, and demo purposes. In the actual cloud-based Volttron
+Central deployment, this is replaced with a K8s `Ingress` or
 `Gateway` object.
 
 ### Manifests for deploying the vremote microservice with the fake driver 
@@ -220,24 +305,25 @@ The vremote microservice requires the following two manifests:
 There is no external IP definition for the vremote microservice,
 since the vremote microservice is only accessed through the Volttron Central Web UI.
 
-### BACnet NetworkAttachmentDescription manifest for second gateway pod interface
+### BACnet NetworkAttachmentDefinition manifest for second gateway pod interface
 
 The K8s CNI handles additional pod interfaces though a 
-`NetworkAttachmentDescription` object. 
+`NetworkAttachmentDefinition` object. 
 Multus requires a network attachment point definition to configure the vbac 
 pod with the second interface. 
-The file `bacnet-net-attach-desc.yml` contains an attachment definition for the
-gateway pod's second interface. Multus matches the `NetworkAttachmentDefinition` 
-`metadata.name` value (`bacnet` in this case) with a configuration item in 
-the `Deployment` pod spec for the second interface. The `spec.config` value is a 
+The file `bacnet-net-attach-def.yml` contains an attachment definition for the
+gateway pod's second interface. Multus matches the value of the `NetworkAttachmentDefinition` 
+`metadata.name` (`bacnet` in this case) with a configuration item in 
+the bacnet `Deployment` pod spec for the second interface. The `spec.config` value is a 
 JSON object providing the configuration for the second interface.
 
 Edit the manifest to configure it to your network as follows:
 
 - Find the name of the second interface on your host by typing `ifconfig` or `ip address` 
-to a `bash` shell.
+to a `bash` shell, or find it from your notes from above. This is the interface with the higher IP host number (last
+byte of the IP address).
 
-- Edit the `bacnet-net-attach-desc.yml` file and change the `"device"` 
+- Edit the `bacnet-net-attach-def.yml` file and change the `"device"` 
 property value, which is set to `"enp0s8"`, to the name of the second network 
 interface on your host machine. This interface will get 
 absorbed into the cluster network namespace and disappear from the
@@ -284,20 +370,21 @@ HTTP and VIP ports defined. There is no external IP definition for the
 vbac service, since the vbac service is accessed only through the Volttron 
 Central Web UI.
 
-Customize the `vbac-deploy.yml` Deployment manifest as follows:
+Customize the `vbac-deploy.yml` `Deployment` manifest as follows:
 
 - Edit the file and replace the value of the `"default-route"` property, set to  `"192.168.0.118"`, in the JSON object that is the value of the 
 `spec.template.annotaions.k8s.v1.cni.cncf.io/networks` key with the IP 
 address of your host machine. Normally with Flannel, the default route goes out the `eth0` interface as shown in
 the above diagram and over `cni0` host interface into the `flannel` overlay. 
 Changing the default route ensures that traffic to the host subnet exits the pod
-through the `net0` interface which is on the host subnet.
+through the `net0` interface which is on the host subnet. Traffic to other pods in the cluster, including the vcentral
+pod, will still go through the `eth0` interface.
 
 ## Deploying the vcentral microservice pod
 
 You need to have a Volttron Central microservice deployed somewhere in your cluster
-network before deploying any gateways, because the gateways used hostname base service discovery look for the
-Volttron Central hostname (`vcentral` in the default image) to connect up
+network before deploying any gateways, because the gateways use hostname base service discovery look for the
+Volttron Central hostname (`vcentral` in by default) to connect up
 with Volttron Central. If you don't have a cloud or on-prem remote Volttron Central deployed
 you can deploy a test vcentral microservice in
 the standalone gateway cluster as follows. 
@@ -321,9 +408,9 @@ If the pod is running, you should see something like:
 	
 The first time you start it, it may take a while to download the image.
 
-You can test whether the Volttron Central microservice is running by 
-using your browser running on the host to browse to the Web page. Browse to the URL
-`https://<host IP address>:8443/index.html`. This will bring up the
+You can test whether the Volttron Central microservice is running through a 
+browser running on the host to browse to the Web page. Type 
+`https://<host IP address>:8443/index.html` into the address bar. This will bring up the
 Volttron Central admin splash page:
 
 ![Volttron Central splash page](image/vc-admin-splash.png)
@@ -347,9 +434,9 @@ should now be in the Volttron Central dashboard Web app:
 
 This should verify that the vcentral microservice is working.
 
-Note that the vcentral microservice uses SQL-lite so the database will not
-outlive the pod lifetime unless you modify the `Deployment` pod spec
-to mount a persistent volume at `/home/volttron/db` for the database.
+Note that the vcentral microservice uses SQL-lite without mounting an external volume for the database 
+so the database will not
+outlive the pod lifetime.
 
 ### Deploying the vremote microservice pod
 
@@ -389,7 +476,7 @@ Clicking on *vremote* shows the agents running in the vremote microservice:
 
 Go up to the menu bar in the upper right hand corner and click on *Charts*.
 This will bring up a display where you can configure charts of data to display.
-Click on *Add Charts* button and the *Add Chart* dialog should come up. Click on the *Topics* pulldown list.
+Click on the *Add Charts* button and the *Add Chart* dialog should come up. Click on the *Topics* pulldown list.
 You should see a pulldown list of variables you can display (*OutsideAirTemperature1*, etc.).
 If you'd like to display a chart, select the variable, then select the chart type in the *Chart Type* pulldown.
 
@@ -442,7 +529,7 @@ You should see the following:
 	2022-05-07 19:26:20,195 - INFO    | DPR2-O is Real(50)
 	2022-05-07 19:26:20,196 - INFO    | Duct Pressure Setpoint is Real(1)
 
-Note down the IP address in line 5, since you will be using that to edit the Volttron Platform Driver Agent configuration.
+Note down the IP address in line 5, since you will be using that to edit the Volttron Platform Driver Agent `Configmaps`.
 
 Since the vbac container has the basic configuration for the simulated AHU baked
 in, you will have to build another container with configuration if you
@@ -473,23 +560,21 @@ or print more detailed information using `kubectl describe`.
 
 ### Creating the vbac `Service`
 
-Before creating the vbac `Deployment`, you first need to create the vbac `Service` and the `bacnet` `NetworkAttachmentDescription`.
+Before creating the vbac `Deployment`, you first need to create the vbac `Service` and the `bacnet` `NetworkAttachmentDefinition`.
 
 Create the vbac `Service` as follows:
 
 	kubectl apply -f vbac-service.yml
 	
 This creates a `ClusterIP` service for vbac on both the http (port 8443) and the VIP bus (port 22916). 
-VIP communicates primarily through a Unix socket and so not visible outside the pod, but is reserved anyway.
 
-Create the `bacnet` `NetworkAttachmentDescription` as follows:
+Create the `bacnet` `NetworkAttachmentDefinition` as follows:
 
-	kubectl apply -f bacnet-net-attach-desc.yml
+	kubectl apply -f bacnet-net-attach-def.yml
 	
-Note that if you want to look at the `bacnet NetworkAttachementDescription`, you need to give
-`kubectl` the full name for the object type:
+You can examine the `bacnet NetworkAttachmentDefinition` with:
 
-	kubectl describe networkattachmentdescription.k8s.cni.cncf.io bacnet
+	kubectl describe net-attach-def bacnet
 	
 ### Creating the vbac `Deployment`
 
@@ -507,7 +592,7 @@ pod name "vbac".
 
 ### Check whether the deployment was successful from the Volttron Central web app
 
-Using the Vottron Central web app deployed either locally or in the cloud, check whether the deployment was
+Using the Vottron Central web app deployed either locally earlier or in the cloud, check whether the deployment was
 successful by logging in and navigating to the *Platforms* page as described above. Click on *vbac*->*Charts*->*Add Chart*.
 In the *Add Chart* dialog, click on the *Topics* pulldown and you should see a pulldown list as in the following display:
 

@@ -256,6 +256,19 @@ doesn't exist.
 [This page](https://www.cni.dev/plugins/current/ipam/dhcp/)
 provides more information on enabling DHCP ipam for K8s CNI.
 
+To ensure that the CNI daemon restarts if when the host reboots, we need
+to create a Linux systemctl service. The file `cni-dhcpd-relay.service`
+contains a systemctl unit definition for the service. Enable it as follows:
+
+	sudo cp cni-dhcpd-relay.service /lib/systemd/system
+	sudo systemctl daemon-reload
+	sudo systemctl enable cni-dhcpd-relay
+	
+Then enable the service and check if its running:
+
+	sudo systemctl start cni-dhcpd-relay
+	sudo systemctl status cni-dhcpd-relay
+
 ## Kubernetes manifests for deploying gateway pods
 
 A collection of Kubernetes yaml manifests are provided for testing and demos.

@@ -1,0 +1,10 @@
+[Unit]
+Description=CNI DHCP Relay Daemon
+After=network.target
+
+[Service]
+ExecStart=/opt/cni/bin/dhcp daemon -pidfile=/run/cni/dhcpd.pid </dev/null &>/run/cni/dhcpd.log
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

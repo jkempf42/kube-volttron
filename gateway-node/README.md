@@ -243,7 +243,7 @@ Since we want the second interface to be part of the host network, we need to pr
 from the host subnet DHCP server. Unfortunately, Multus cannot find 
 the DHCP server on your host subnet without a relay running on the host. For the relay to restart when the host reboots,
 the DHCP server must be installed as a Linux `systemctl` service. The first step is to copy the shell script 
-`cleanstart-cni-dhcpd.sh` which cleans up any old sockets and starts the daemon to `/usr/local/bin`:
+`cleanstart-cni-dhcpd.sh`, which cleans up any old sockets and starts the daemon, to `/usr/local/bin`:
 
 	sudo cp cleanstart-cni-dhcpd.sh /usr/local/bin
 
@@ -251,7 +251,7 @@ The next step is to create a `systemctl` unit for the service and enable and sta
 
 	sudo cp cni-dhcpd-relay.service /lib/systemd/system
 	sudo systemctl daemon-reload
-	sudo systemctl enable /lib/systemd/system
+	sudo systemctl enable cni-dhcpd-relay.service
 	
 After the last command, you should see the following output:
 
@@ -259,7 +259,7 @@ After the last command, you should see the following output:
 	
 Then start the service:
 
-	sudo systemctl cni-dhcpd-relay.service
+	sudo systemctl start cni-dhcpd-relay.service
 	
 You can check on the status of the service with:
 

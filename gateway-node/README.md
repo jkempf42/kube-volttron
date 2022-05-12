@@ -182,9 +182,40 @@ private address space). To install Flannel, type the following into a shell wind
 
 You also need to remove the taint on the K8s control node that prohibits app 
 workloads from running on it, since the gateway cluster only has one node. 
-Use the following command:
+Unfortunately, K8s has changed the API for this and therefore you may
+have a different API key depending on the version of K8s you installed. 
+To find out what the API key is, run:
 
-	kubectl taint node <node host-name> node-role.kubernetes.io/master-
+	kubectl get nodes
+	
+which should print out something like this:
+
+	NAME           STATUS   ROLES           AGE   VERSION
+	gateway-node   Ready    control-plane   35h   v1.24.0
+
+where the hostname under name should be the hostname of your node. Then run
+with `<hostname>` being the `Name` column item from the above printout:
+
+	kubectl get nodes -o=custom-columns=<hostname>:.metadata.name,TaintKey:.spec.taints[*].key,TaintValue:.spec.taints[*].value,TaintEffect:.spec.taints[*].effect
+	
+which should print out something like this:
+
+	<hostname>   TaintKey                                TaintValue   TaintEffect
+	<hostname>   node-role.kubernetes.io/control-plane   <none>       NoSchedule
+
+where the NoSchedule means that the node is not available for scheduling
+workloads. Now remove the taint with the following command, replacing 
+`control-plane` with `master` if you see `master` instead of 
+`control-plane` in the above:
+
+	kubectl taint node gateway-node node-role.kubernetes.io/control-plane-
+	
+You should see the following printed out, with `<hostname>`replaced by the
+name of your host:
+
+	node/<hostname> untainted
+
+Your gateway node should now be ready to schedule Volttron pods.
 	
 ## Clone the kube-volttron git repo
 
@@ -199,8 +230,10 @@ Change to the `gateway-node` subdirectory:
 ## Installing the Multus multi-network CNI driver
 
 In order to deploy a multi-interface pod, you need to install the Multus CNI driver.
-Complete instructions for installing Multus including technical background are [here](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md). Your clone of the `kube-volttron` repo should have cloned Multus as a 
-submodule. 
+Complete instructions for installing Multus including technical background are [here](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md). First
+change to the `gateway-node` directory and clone the `multus` repo:
+
+	git clone https://github.com/k8snetworkplumbingwg/multus-cni
 
 To install Multus, change to the `multus-cni` subdirectory and install the Multus custom resource:
 
@@ -317,7 +350,8 @@ be saved if you bring down the gateway node.
 with an external IP address so that you can access the Volttron Central 
 Web UI from a 
 browser running on the host for testing. You should replace the IP address in
-the manifest, the array value of the key `spec.externalIPs`, with the IP address of your host machine. 
+the manifest, the array value of the key `spec.externalIPs`, with the IP address of the interface on your host machine having the smallest number in the last
+byte. 
 Currently this is set to `192.168.0.118`. The Volttron Central Web UI will run on the standard Volttron port,
 8443, on your host machine so be sure there is no other service running on
 that port. The service manifest also contains a port definition for the 
@@ -326,8 +360,10 @@ the VIP bus (individual pods in a K8s cluster have no access to a common Unix
 socket which is how agents typically communicate on the VIP bus). 
 Note that the `externalIPs` configuration is
 only for development, testing, and demo purposes. In the actual cloud-based Volttron
-Central deployment, this is replaced with a K8s `Ingress` or
-`Gateway` object.
+Central deployment, this is replaced with a K8s `Ingress` object. Note that the 
+vcentral microservice deployed with the gateway-node uses the SQL-lite historian
+without mounting an external volume for the database so the database will 
+not outlive the pod lifetime since it is just for testing purposes.
 
 ### Manifests for deploying the vremote microservice with the fake driver 
 
@@ -419,11 +455,16 @@ pod, will still go through the `eth0` interface.
 You need to have a Volttron Central microservice deployed somewhere in your cluster
 network before deploying any gateways, because the gateways use hostname base service discovery look for the
 Volttron Central hostname (`vcentral` in by default) to connect up
-with Volttron Central. If you don't have a cloud or on-prem remote Volttron Central deployed
+with Volttron Central. 
+If you don't have a cloud or on-prem remote Volttron Central deployed
 you can deploy a test vcentral microservice in
 the standalone gateway cluster as follows. 
 
-First, deploy the `Service` with:
+Before deploying the service, you should edit 
+`vcentral-service.yml` and replace the IP address
+that is the array value of `spec.externalIPs`, with the IP address of the interface on your host machine having the smallest number in the last
+byte (after the last .). 
+By default this address is set to `192.168.0.118`. Then, deploy the `Service` with:
 
 	kubectl apply -f vcentral-service.yml
 	
@@ -444,8 +485,12 @@ The first time you start it, it may take a while to download the image.
 
 You can test whether the Volttron Central microservice is running through a 
 browser running on the host to browse to the Web page. Type 
-`https://<host IP address>:8443/index.html` into the address bar. This will bring up the
-Volttron Central admin splash page:
+`https://<host IP address>:8443/index.html` into the address bar. Your 
+browser will bring up a page indicating that the certificate may be 
+questionable, this is normal behavior because vcentral uses a self-signed
+certificate. Click on the *Advanced*->*Continue* button or however your
+browser designates it. 
+This will bring up the Volttron Central admin splash page:
 
 ![Volttron Central splash page](image/vc-admin-splash.png)
 
@@ -467,10 +512,6 @@ should now be in the Volttron Central dashboard Web app:
 ![Volttron Central dashboard web app](image/vc-dashboard.png)
 
 This should verify that the vcentral microservice is working.
-
-Note that the vcentral microservice uses SQL-lite without mounting an external volume for the database 
-so the database will not
-outlive the pod lifetime.
 
 ### Deploying the vremote microservice pod
 
@@ -524,9 +565,10 @@ Be sure to remove the vremote `Deployment` before creating the vbac `Deployment`
 ## Deploying the simulated BACnet AHU
 
 The Python file `sim-AHU.py` is a copy of Ben Barting's simulated air handling unit, programmed on top of the
-BAS0 package. Install the BAS0 package using `pip`:
+BAC0 package. Install the BAC0 package using `pip` 
+(installing `pip` if it isn't already):
 
-	pip install BAS0
+	pip install BAC0
 	
 In a separate bash shell window, start the simulated air handling unit:
 

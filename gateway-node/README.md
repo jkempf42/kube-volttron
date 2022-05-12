@@ -241,33 +241,54 @@ You can test whether your configuration has worked by running:
 Multus requires IP address management (ipam) to be specified for the second pod interface. 
 Since we want the second interface to be part of the host network, we need to provision the IP address
 from the host subnet DHCP server. Unfortunately, Multus cannot find 
-the DHCP server on your host subnet without a relay, so we need
-to start the CNI DHCP relay on the host. Two utility scripts are provided 
-for this purpose. The scripts run commands with `sudo` so you will be prompted 
-for your password:
+the DHCP server on your host subnet without a relay running on the host. For the relay to restart when the host reboots,
+the DHCP server must be installed as a Linux `systemctl` service. The first step is to copy the shell script 
+`cleanstart-cni-dhcpd.sh` which cleans up any old sockets and starts the daemon to `/usr/local/bin`:
 
-- `start-dhcpd.sh` - Start the CNI DHCP relay daemon. Handles cleanup of 
-old log file 
-or creation of a directory for the log file and CNI dhcp daemon socket file if the directory
-doesn't exist.
+	sudo cp cleanstart-cni-dhcpd.sh /usr/local/bin
 
-- `stop-dhcpd.sh` - Kills the CNI DHCP relay daemon
-
-[This page](https://www.cni.dev/plugins/current/ipam/dhcp/)
-provides more information on enabling DHCP ipam for K8s CNI.
-
-To ensure that the CNI daemon restarts if when the host reboots, we need
-to create a Linux systemctl service. The file `cni-dhcpd-relay.service`
-contains a systemctl unit definition for the service. Enable it as follows:
+The next step is to create a `systemctl` unit for the service and enable and start it, which starts the daemon, as follows:
 
 	sudo cp cni-dhcpd-relay.service /lib/systemd/system
 	sudo systemctl daemon-reload
-	sudo systemctl enable cni-dhcpd-relay
+	sudo systemctl enable /lib/systemd/system
 	
-Then enable the service and check if its running:
+After the last command, you should see the following output:
 
-	sudo systemctl start cni-dhcpd-relay
-	sudo systemctl status cni-dhcpd-relay
+	Created symlink /etc/systemd/system/multi-user.target.wants/cni-dhcpd-relay.service → /lib/systemd/system/cni-dhcpd-relay.service.
+	
+Then start the service:
+
+	sudo systemctl cni-dhcpd-relay.service
+	
+You can check on the status of the service with:
+
+	sudo systemctl status cni-dhcpd-relay.service
+	
+which should print out something like this:
+
+	● cni-dhcpd-relay.service - CNI DHCP Relay Daemon
+		Loaded: loaded (/lib/systemd/system/cni-dhcpd-relay.service; enabled; vendor preset: enabled)
+		Active: active (running) since Wed 2022-05-11 19:10:46 PDT; 7s ago
+		Main PID: 83307 (dhcp)
+			Tasks: 5 (limit: 9459)
+		Memory: 956.0K
+		CGroup: /system.slice/cni-dhcpd-relay.service
+			    └─83307 /opt/cni/bin/dhcp daemon
+
+	May 11 19:10:46 gateway-node systemd[1]: Started CNI DHCP Relay Daemon.
+	May 11 19:10:46 gateway-node cleanstart-cni-dhcpd.sh[83308]: ++ ls -A /run/cni
+	May 11 19:10:46 gateway-node cleanstart-cni-dhcpd.sh[83307]: + '[' -z dhcp.sock ']'
+	May 11 19:10:46 gateway-node cleanstart-cni-dhcpd.sh[83307]: + rm -rf /run/cni/dhcp.sock
+	May 11 19:10:46 gateway-node cleanstart-cni-dhcpd.sh[83307]: + exec /opt/cni/bin/dhcp daemon
+	
+You can double check whether the damon started by typing:
+
+	ps -aux | grep dhcp
+	
+which should print out something like this:
+
+	root       83307  0.0  0.0 110288  6540 ?        Ssl  19:10   0:00 /opt/cni/bin/dhcp daemon
 
 ## Kubernetes manifests for deploying gateway pods
 

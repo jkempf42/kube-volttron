@@ -3,7 +3,7 @@ Description=CNI DHCP Relay Daemon
 After=network.target
 
 [Service]
-ExecStart=/opt/cni/bin/dhcp daemon -pidfile=/run/cni/dhcpd.pid </dev/null &>/run/cni/dhcpd.log
+ExecStart=/usr/local/bin/cleanstart-cni-dhcpd.sh 
 Restart=on-failure
 
 [Install]

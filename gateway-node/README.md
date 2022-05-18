@@ -75,7 +75,7 @@ Ubuntu 20.04 using the VirtualBox VMM, so the directions for adding an
 additional interface to a VirtualBox VM are explained in detail in the following subsections.
 
 ### Clone a VM or import an ISO for a new one.
-Clone an existing VM using VirtualBox by right clicking on the VM in the left side menu bar and choosing *Clone* from the VM menu.
+Clone an existing VM using VirtualBox by right clicking on the VM in the left side menu bar and choosing *Clone* from the VM menu. In the *MAC Address Policy* pulldown, scroll down to the setting *Generate new MAC addresses for all network adaptors*.
 
 ### Bring up the Network Settings tab
 Right click on the new VM in the left side menu bar of the VirtualBox app
@@ -86,7 +86,7 @@ the *Settings* tab is up, click on *Network* in the left side menu bar. You shou
 
 Be sure your first interface is a *Bridged Adaptor* and not NAT or anything else
 
-### Configure the second interface
+### Configure the second interfaceP
 
 Click on the *Adaptor 2* tab then
 click the check box marked *Enable Network Adaptor*. Select the 

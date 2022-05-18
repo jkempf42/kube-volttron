@@ -35,7 +35,7 @@ are nice if you have IPv6 available but only increase the complexity. Below,
 I've summarized the instructions for installing and configurating Wireguard
 specifically for the kube-volttron use case using IPv4.
 
-Note that these instructions work best if you have a VM or bare metal device running Ubuntu 20.4 
+Note that these instructions work best if you have a VM or bare metal device running Ubuntu 20.4 as your gateway node
 from which you can work back into the cloud using `ssh`. You can 
 open one window and `ssh` into your cloud VM and have the other on the gateway 
 machine. Both sides need to have Wireguard installed and configured.
@@ -175,7 +175,8 @@ The one time command for enabling the interface is:
 	sudo wg-quick up
 
 This will create a virtual interface for each configuration file in
-`/etc/wireguard` and configure it to route over the VPN.
+`/etc/wireguard` and configure it to route addresses in the allowed
+range over the VPN.
 
 To enable a system service, use:
 
@@ -197,8 +198,9 @@ to see the service status. Note that the status output will show all the
 To configure additional gateway nodes, install Wireguard on the node and 
 generate
 a public and private key as described above. Then select an IP address
-for the gateway node `wg0` interface in the `10.8.0.0/16` range, incrementing
-the last number by one each time you configure a new node. Create a 
+for the gateway node `wg0` interface in the `10.8.0.0/24` range, incrementing
+the last number by one each time you configure a new node. You can
+have a maximum of 254 gateway nodes on the VPN. Create a 
 configuration file for `wg0` in `/etc/wireguard/wg0.conf`, being sure
 to add the appropriate keys and IP address as described above. You can copy
 the file above and change the configuration key values as appropriate.
@@ -300,10 +302,11 @@ broadcast to find devices or other protocols that won't work through the
 Kubernetes proxies. To accommodate these protocols,
 the Volttron IoT gateway agent pods may need to create a second 
 interface directly on the site local area network using Multus, since
-the Flannel
-network has no
+the pod Flannel
+interface has no
 direct access to the local site network.
-Please see the README.md file in the `gateway-node` directory for
+Please see the [README.md](gateway-node/README.md), the README file 
+in the `gateway-node` directory, for
 more details and an architectural diagram. 
 
 To install Multus, first clone the Multus git repo in the `cluster-config` 
@@ -311,7 +314,7 @@ directory:
 
 	git clone https://github.com/k8snetworkplumbingwg/multus-cni
 
-We need to modify the default deployment manifest. 
+We need to modify the default deployment manifest for k3s installation. 
 [This link](https://gist.github.com/janeczku/ab5139791f28bfba1e0e03cfc2963ecf) 
 describes the edits to make in the manifest. 
 The manifest can be found in `multus-cni/deployments`. Change into the 
@@ -334,9 +337,9 @@ You should see something like:
 
 ### Installing a k3s agent node (worker node)
 
-[This link](https://rancher.com/docs/k3s/latest/en/installation/install-options/agent-config/) points to the installation options for a k3s agent. But
-there are no comprehensive instructions about how to get an agent running, 
-so these are provided here.
+[This link](https://rancher.com/docs/k3s/latest/en/installation/install-options/agent-config/) points to the installation options for a k3s agent.
+Unfortunately, the link provides no comprehensive instructions for installation,
+so these are provided below.
 
 The first 
 step is to copy two files from the server node onto the client. 
@@ -347,10 +350,10 @@ your cloud VM server node to the gateway node in the `cluster-config`
 directory using `scp`.
 
 The second file is the `kubeconfig` yaml file that tells `kubectl`
-where to find the API server (among other things). It is located your cloud
+where to find the API server (among other things). It is located on your cloud
 VM server node at `/etc/rancher/k3s/k3s.yaml`. Create the `~/.kube` 
 subdirectory and copy the `k3s.yaml` file from your cloud VM to
-`~/.kube/config` again using scp. 
+`~/.kube/config` again using `scp`. 
 Then edit the file and change the IP address of 
 the `server:` from `127.0.0.1` to the address on the Wireguard `wg0` 
 interface of your cloud VM server node. If you followed the numbering 
@@ -364,19 +367,22 @@ cloud VM `wg0` interface if you didn't use `10.8.0.1`. Also change
 the value of the `--node-ip` parameter from `10.8.0.2` to the
 address on the Wireguard `wg0` interface of the gateway node if you
 used a different Wireguard numbering scheme. Finally, replace the
-`node-external-ip` parameter with the IP address on the interface with
+`--node-external-ip` parameter with the IP address on the 
+gateway node interface with
 the lowest number as described in the previous section on configuring k3s
 on the server. 
 
-Note that that script interpolates any arguments into the command to install,
+Note that any arguments provided to the script are interpolated
+into the command to install,
 so you can add additional arguments from the k3s agent installation options
 page. For example, you may  want to add a node label to your gateway node indicating its geographic location and function:
 
-	--node-label location=International Widgets, Inc., 5601 Speedway Blvd, Tucson, AZ, USA, 85710
-	--node-label service=electric car charger controller
+	--node-label location="International Widgets, Inc., 5601 Speedway Blvd, Tucson, AZ, USA, 85710"
+	--node-label service="electric car charger controller"
 	
 After the script is done installing k3s, use the commands in the previous
-section to add your username to the Docker group so you can access the
+section on server installatoin 
+to add your username to the Docker group so you can access the
 Docker socket without `sudo`.
 
 Type:
@@ -398,7 +404,7 @@ onsite gateway node.
 For Wireguard troubleshooting, you should ensure that you have a collection of
 basic Linux network connectivity tools installed, like `ping`, `ifconfig`,
 and `traceroute`. These may also come in handy for the k3s installation.
-You can use `systemctl status wg-quick@2w0.service` to find out the
+You can use `systemctl status wg-quick@wg0.service` to find out the
 status of the Wireguard interface service if something goes wrong, and
 also start, stop, enable and disable the service using `systemctl`. 
 
@@ -408,7 +414,7 @@ likely not start. You can use `systemctl status k3s.service`,
 what happened. Check the `k3s.service` or `k3s-agent.service` file in 
 `/etc/systemd/system` to ensure the command on the `ExecStart` key
 is correct. You can also start the command by hand, changing the arguments.
-Finally, if you need to start the installation from scratch, you
+Finally, if you need to redo the installation from scratch, you
 can use `/usr/local/bin/k3s-uninstall.sh` or 
 `/usr/local/bin/k3s-agent-uninstall.sh` to completely remove it and
 install again. If you want to use one of the `build-xx` scripts to

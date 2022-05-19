@@ -1,4 +1,4 @@
-# Deploying the Volttron K8s Gateway Node
+# Deploying the kube-volttron gateway node
 
 The gateway node sits at a remote site, like in a building or at a solar farm
 or a EV charger,
@@ -29,11 +29,13 @@ overview of which is given is discussed in the next section.
 If you decide to deploy vbac, you will need some additional networking support to
 allow the Volttron BACnet proxy agent access to BACnet devices on the local area
 network. By default, kube-volttron uses the [Flannel CNI driver](https://github.com/flannel-io/flannel#flannel)
-for intra cluster networking between pods. Flannel constructs an isolated overlay network inside the cluster
+for intra cluster networking between pods
+as part of the k3s cluster deployment. Flannel constructs an 
+isolated overlay network inside the cluster
 with CIDR 10.244.0.0/16 using the [VXLAN overlay protocol](https://datatracker.ietf.org/doc/html/rfc7348), and there
 is no routing between pods inside the cluster and devices outside by default, though pods on the gateway node 
-can communicate with pods on other nodes in the cluster, including the Volttron Central pod in the cloud, through 
-the overlay. In the figure below, the BACnet K8s cluster network architecture allows the vbac pod to communicate with devices on the host IP subnet by 
+can communicate with pods on other nodes in the cluster, including the Volttron Central pod on the central node, through 
+the overlay. In the figure below, the BACnet Kubernetes cluster network architecture allows the vbac pod to communicate with devices on the host IP subnet by 
 creating another interface in the pod connected directly to the host network.
 
 ![BACnet network architecture](image/bn-gateway-node-arch-flannel.png)
@@ -41,13 +43,14 @@ creating another interface in the pod connected directly to the host network.
 The gateway pod is configured with an additional network interface using some advanced features of the CNI. The [Multus
 multi-interface CNI driver](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/configuration.md) 
 connects up both the intra-cluster Flannel network and a second interface imported from
-the second interface on the gateway host into the gateway pod. The Multus
-git distro is already incorporated by reference into the gateway-node directory
-via the subdirectory multus-cni.
-This means the host VM or OS must have two Ethernet interfaces, one
-connected to the local area network and the Internet through a router and one that is absorbed into the gateway
-pod when it is created. [^1] A K8s yaml manifest is provided to create `NetworkAttachementDefinition` K8s CNI 
-object called `bacnet` 
+the second interface on the gateway host into the gateway pod. As part of 
+setting up your cluster, you created and configured a VirtualBox VM with two interfaces on the site local
+network and deployed Multus on the central node. [^1]
+Both interfaces are
+connected to the local area network, one is connected to the Internet through a router and one is 
+absorbed into the gateway
+pod when it is created.  A Kubernetes yaml manifest is provided to create a `NetworkAttachementDefinition` 
+CNI object called `bacnet` 
 of type `host-device` for the second interface. This obtains its DHCP address from the host IP subnet, 
 allowing the Volttron BACnet Proxy Agent running in the gateway pod to conduct UDP traffic over BACnet port 47808 
 with devices (both simulated
@@ -60,268 +63,19 @@ conduct BACnet broadcast (WhoIs/IAm) but this architecture should enable broadca
 pod in the future. Without the second interface, the gateway pod cannot communicate with BACnet devices
 on the host IP subnet. [^2]
 
-[^1] The installation directions below walk you through creating a VM with VirtualBox that has an additional 
-interface.
-
-[^2] Some CNI drivers that do not use overlays ("flat" drivers) may allow broadcast and direct access to the host network, this is an area for future work.
-
-## Preparing the base VM or operating system
-
-As mentioned above, you will need a base VM or operating system with two network interfaces to support
-a two interface gateway pod. How you configure an additional 
-interface depends on what 
-operating system and/or VM manager you are using. Kube-volttron was developed on 
-Ubuntu 20.04 using the VirtualBox VMM, so the directions for adding an 
-additional interface to a VirtualBox VM are explained in detail in the following subsections.
-
-### Clone a VM or import an ISO for a new one.
-Clone an existing VM using VirtualBox by right clicking on the VM in the left side menu bar and choosing *Clone* from the VM menu. In the *MAC Address Policy* pulldown, scroll down to the setting *Generate new MAC addresses for all network adaptors*.
-
-### Bring up the Network Settings tab
-Right click on the new VM in the left side menu bar of the VirtualBox app
-to bring up the VM menu, then click on *Settings*. When
-the *Settings* tab is up, click on *Network* in the left side menu bar. You should get a tab that looks like this:
-
-![Network Settings tab](image/vb-net-settings.png)
-
-Be sure your first interface is a *Bridged Adaptor* and not NAT or anything else
-
-### Configure the second interfaceP
-
-Click on the *Adaptor 2* tab then
-click the check box marked *Enable Network Adaptor*. Select the 
-*Bridged Adaptor* for the network type. Click on the *Advanced* arrow and make sure the *Cable Connected* 
-checkbox is checked.
-
-### Save the configuration
-
-Save the configuration by clicking on the *OK* button on the bottom right.
-
-Your VM should be ready to run.
-
-## If you have a cloud Volttron Central already deployed
-
-If you already have a K8s node deployed in the cloud, you should use the [BYOH 
-ClusterAPI](https://github.com/vmware-tanzu/cluster-api-provider-bringyourownhost) operator to deploy and provision your gateway node, see the parent README and you can skip the next section since ClusterAPI handles K8s installation on
-worker nodes.
-
-## Preinstallation host config
-
-Prior to installing K8s, be sure to set the hostname on the node:
-
-	hostnamectl set-hostname <new-hostname>
-	
-and confirm the change with:
-
-	hostnamectl
-
-You should not have to reboot the node.
-
-Find your host IP addresses using `ifconfig` and note the IP address having the lowest host number (last field).
-For example, on my machine the first interface has host number 125 and is named `enp0s3` while the second interface
-has host number 126 and has name `enp0s8`. Kubernetes will run on the first interface while the second interface 
-will become part of the gateway pod.
-
-Make a directory to put in downloaded files and other artifacts of the cluster setup:
-
-	mkdir kubeadm-install
-	
-
-## Deploying K8s on the gateway node.
-
-`kubeadm` is the recommended deployment tool for K8s on the node, because many other K8s distros are opinionated
-about networking in specific ways that may be incompatible 
-with running a pod having a second interface onto the host subnet. 
-The cluster installation process should take about 45 minutes, and if something goes wrong, you should simply delete
-your VM (if you are using a VM) and clone a new one or reinstall the OS and start over because it is 
-very timeconsuming to troubleshoot a broken installation. 
-You can find instructions for
-installing K8s with `kubeadm` [here](https://computingforgeeks.com/deploy-kubernetes-cluster-on-ubuntu-with-kubeadm/). 
-The page includes instructions for installing
-the Docker runtime but be sure to also install the Mirantis docker shim,
-since the shim is no longer distributed with K8s by default. A [link](https://computingforgeeks.com/install-mirantis-cri-dockerd-as-docker-engine-shim-for-kubernetes/) to the instructions for installing the shim is 
-on the kubeadm installation page at the place in the process where you need to install it 
-but is also included here for reference.
-
-When when you use kubeadm to pull images, be sure to include the --cri-socket for Docker:
-
-	sudo kubeadm config images pull --cri-socket=unix:///run/cri-dockerd.sock
-	
-The socket file needs to be formatted as a URL, otherwise kubeadm will complain.
-
-The `kubeadm init` command also needs to be run as root:
-
-	sudo kubeadm init --control-plane-endpoint <host IP address w. lowest host number> --pod-network-cidr 10.244.0.0/16  --cri-socket unix:///run/cri-dockerd.sock
-
-The pod network CIDR given above is for Flannel, which we will use as the CNI provider for the intra-pod network.
-
-Near the end of the printout, `kubeadm` prints instructions for enabling nonroot users to access the cluster. Be sure
-to run them before going any further.
-
-At the end of the output for `kubeadm init`, instructions for adding a worker node will be printed, for example:
-
-	You can now join any number of control-plane nodes by copying certificate authorities
-	and service account keys on each node and then running the following as root:
-
-	kubeadm join <host IP address w. lowest host number>:6443 --token zz7oz0.levc66osara7u9ij \
-		--discovery-token-ca-cert-hash sha256:be2301e4a26f33a0d408dc49068765493da2a2dde76784a4ca3af5dfee3fe031 \
-		--control-plane 
-
-	Then you can join any number of worker nodes by running the following on each as root:
-
-	kubeadm join 192.168.0.125:6443 --token zz7oz0.levc66osara7u9ij \
-		--discovery-token-ca-cert-hash sha256:be2301e4a26f33a0d408dc49068765493da2a2dde76784a4ca3af5dfee3fe031 
-
-You should note these down. While it isn't likely that you will need to add another node, best to save it in a file
-just in case. 
-
-For cluster networking, you should use Flannel, which is the simplest (constructs an overlay network in the 10.244.0.0/16
-private address space). To install Flannel, type the following into a shell window:
-
-	kubectl apply -f https://github.com/coreos/flannel/raw/master/Documentation/kube-flannel.yml
-
-You also need to remove the taint on the K8s control node that prohibits app 
-workloads from running on it, since the gateway cluster only has one node. 
-Unfortunately, K8s has changed the API for this and therefore you may
-have a different API key depending on the version of K8s you installed. 
-To find out what the API key is, run:
-
-	kubectl get nodes
-	
-which should print out something like this:
-
-	NAME           STATUS   ROLES           AGE   VERSION
-	gateway-node   Ready    control-plane   35h   v1.24.0
-
-where the hostname under name should be the hostname of your node. Then run
-with `<hostname>` being the `Name` column item from the above printout:
-
-	kubectl get nodes -o=custom-columns=<hostname>:.metadata.name,TaintKey:.spec.taints[*].key,TaintValue:.spec.taints[*].value,TaintEffect:.spec.taints[*].effect
-	
-which should print out something like this:
-
-	<hostname>   TaintKey                                TaintValue   TaintEffect
-	<hostname>   node-role.kubernetes.io/control-plane   <none>       NoSchedule
-
-where the NoSchedule means that the node is not available for scheduling
-workloads. Now remove the taint with the following command, replacing 
-`control-plane` with `master` if you see `master` instead of 
-`control-plane` in the above:
-
-	kubectl taint node gateway-node node-role.kubernetes.io/control-plane-
-	
-You should see the following printed out, with `<hostname>`replaced by the
-name of your host:
-
-	node/<hostname> untainted
-
-Your gateway node should now be ready to schedule Volttron pods.
-	
-## Clone the kube-volttron git repo
-
-If you haven't already, clone the kube-volttron git repo:
-
-	git clone https://github.com/jak42/kube-volttron/
-	
-Change to the `gateway-node` subdirectory:
-
-	cd kube-volttron/gateway-node
-
-## Installing the Multus multi-network CNI driver
-
-In order to deploy a multi-interface pod, you need to install the Multus CNI driver.
-Complete instructions for installing Multus including technical background are [here](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/quickstart.md). First
-change to the `gateway-node` directory and clone the `multus` repo:
-
-	git clone https://github.com/k8snetworkplumbingwg/multus-cni
-
-To install Multus, change to the `multus-cni` subdirectory and install the Multus custom resource:
-
-	cd multus-cni
-	cat ./deployments/multus-daemonset-thick-plugin.yml | kubectl apply -f -
-
-Wait for a few minutes, then check that the pods are running:
-
-	kubectl get pods --all-namespaces | grep -i multus
-
-You should see output like this:
-
-	kube-system   kube-multus-ds-zrv4j           1/1     Running   6 (13h ago)    24d
-
-Note that there is no way to uninstall Multus once you have installed it, so don't install it on a K8s cluster
-unless you want to run multiple CNI plugins.
-
-There are other options for 
-handling multi-interface pods, but they are all complicated and primarily for
-software defined networking telcom use cases. We only need one pod with two 
-interfaces, one for the intra cluster pod network and one for talking to BACnet devices on the host subnet.
-
-## Configuring the host network to support a multi-interface pod
-
-First, we need to enable routing on the host. Edit `/etc/sysctl.conf` and uncomment `net.ipv4.ip_forward=1` and 
-`net.ipv6.conf.all.forwarding=1` to enable routing on the host after reboot, if they aren't already, 
-then use the command:
-
-	sudo sysctl <routing variable>=1
-
-where `<routing variable>` is  `net.ipv4.ip_forward` and `net.ipv6.conf.all.forwarding` to enable routing 
-in the running host.
-
-You can test whether your configuration has worked by running:
-
-	sudo sysctl -a | grep <routing variable>
-
-Multus requires IP address management (ipam) to be specified for the second pod interface. 
-Since we want the second interface to be part of the host network, we need to provision the IP address
-from the host subnet DHCP server. Unfortunately, Multus cannot find 
-the DHCP server on your host subnet without a relay running on the host. For the relay to restart when the host reboots,
-the DHCP server must be installed as a Linux `systemctl` service. The first step is to copy the shell script 
-`cleanstart-cni-dhcpd.sh`, which cleans up any old sockets and starts the daemon, to `/usr/local/bin`:
-
-	sudo cp cleanstart-cni-dhcpd.sh /usr/local/bin
-
-The next step is to create a `systemctl` unit for the service and enable and start it, which starts the daemon, as follows:
-
-	sudo cp cni-dhcpd-relay.service /lib/systemd/system
-	sudo systemctl daemon-reload
-	sudo systemctl enable cni-dhcpd-relay.service
-	
-After the last command, you should see the following output:
-
-	Created symlink /etc/systemd/system/multi-user.target.wants/cni-dhcpd-relay.service → /lib/systemd/system/cni-dhcpd-relay.service.
-	
-Then start the service:
-
-	sudo systemctl start cni-dhcpd-relay.service
-	
-You can check on the status of the service with:
-
-	sudo systemctl status cni-dhcpd-relay.service
-	
-which should print out something like this:
-
-	● cni-dhcpd-relay.service - CNI DHCP Relay Daemon
-		Loaded: loaded (/lib/systemd/system/cni-dhcpd-relay.service; enabled; vendor preset: enabled)
-		Active: active (running) since Wed 2022-05-11 19:10:46 PDT; 7s ago
-		Main PID: 83307 (dhcp)
-			Tasks: 5 (limit: 9459)
-		Memory: 956.0K
-		CGroup: /system.slice/cni-dhcpd-relay.service
-			    └─83307 /opt/cni/bin/dhcp daemon
-
-	May 11 19:10:46 gateway-node systemd[1]: Started CNI DHCP Relay Daemon.
-	May 11 19:10:46 gateway-node cleanstart-cni-dhcpd.sh[83308]: ++ ls -A /run/cni
-	May 11 19:10:46 gateway-node cleanstart-cni-dhcpd.sh[83307]: + '[' -z dhcp.sock ']'
-	May 11 19:10:46 gateway-node cleanstart-cni-dhcpd.sh[83307]: + rm -rf /run/cni/dhcp.sock
-	May 11 19:10:46 gateway-node cleanstart-cni-dhcpd.sh[83307]: + exec /opt/cni/bin/dhcp daemon
-	
-You can double check whether the damon started by typing:
-
-	ps -aux | grep dhcp
-	
-which should print out something like this:
-
-	root       83307  0.0  0.0 110288  6540 ?        Ssl  19:10   0:00 /opt/cni/bin/dhcp daemon
+[^1] Or if you aren't using VirtualBox then otherwise created an Ubuntu 20.04 node  with a second interface.
+
+[^2] Some CNI drivers ("flat" drivers) allow direct access to the host network from pods, whether they can support
+broadcast is a topic for further study. 
+
+## Collecting information on the network interfaces
+
+Since you will need to customize the `NetworkAttachmentDefinition` file for your gateway node's addressing scheme, 
+you need to collect information on your network interfaces. 
+Find your gateway node IP addresses using `ifconfig` and note the IP address having the highest number as the last
+character in its name.
+For example, on my machine the first interface is named `enp0s3` while the second interface
+has is named `enp0s8`. The second interface will become part of the gateway pod.
 
 ## Kubernetes manifests for deploying gateway pods
 
@@ -336,14 +90,17 @@ you will need to replace the name of the container image in the manifests under 
 `spec.template.containers.image` key, which is currently set to
 `jkempf42/public-repo:<image type tag>`, with your own repository and image tag.
 
-### Volttron Central microservice manifests
 
+### Vcentral microservice manifests
+
+The vcentral manifests are provided for testing purposes only. If you brought up Volttron on your central node,
+you should deploy vcentral on the gateway node. 
 The Volttron Central microservice requires the following two manifests: 
 
-- `vcentral-deploy.yml`: This sets up a K8s `Deployment` for a vcentral Volttron Central microservice with an 
+- `vcentral-deploy.yml`: This sets up a Kubernetes `Deployment` for a vcentral Volttron Central microservice with an 
 SQL Lite historian. 
 The deployment has only one replica. The
-K8s `Deployment` restarts the pod if it crashes. The database is not exported from the container so the data won't 
+Kubernetes `Deployment` restarts the pod if it crashes. The database is not exported from the container so the data won't 
 be saved if you bring down the gateway node.
 
 - `vcentral-service.yml`: This defines a `ClusterIP` type service for vcentral, but
@@ -356,11 +113,11 @@ Currently this is set to `192.168.0.118`. The Volttron Central Web UI will run o
 8443, on your host machine so be sure there is no other service running on
 that port. The service manifest also contains a port definition for the 
 VIP bus port at port number 22916 so the gateway pods can connect to
-the VIP bus (individual pods in a K8s cluster have no access to a common Unix
+the VIP bus (individual pods in a Kubernetes cluster have no access to a common Unix
 socket which is how agents typically communicate on the VIP bus). 
 Note that the `externalIPs` configuration is
 only for development, testing, and demo purposes. In the actual cloud-based Volttron
-Central deployment, this is replaced with a K8s `Ingress` object. Note that the 
+Central deployment, this is replaced with a Kubernetes `Ingress` object. Note that the 
 vcentral microservice deployed with the gateway-node uses the SQL-lite historian
 without mounting an external volume for the database so the database will 
 not outlive the pod lifetime since it is just for testing purposes.
@@ -377,7 +134,7 @@ since the vremote microservice is only accessed through the Volttron Central Web
 
 ### BACnet NetworkAttachmentDefinition manifest for second gateway pod interface
 
-The K8s CNI handles additional pod interfaces though a 
+The Kubernetes CNI handles additional pod interfaces though a 
 `NetworkAttachmentDefinition` object. 
 Multus requires a network attachment point definition to configure the vbac 
 pod with the second interface. 
@@ -390,8 +147,8 @@ JSON object providing the configuration for the second interface.
 Edit the manifest to configure it to your network as follows:
 
 - Find the name of the second interface on your host by typing `ifconfig` or `ip address` 
-to a `bash` shell, or find it from your notes from above. This is the interface with the higher IP host number (last
-byte of the IP address).
+to a `bash` shell, or find it from your notes from above. This is the interface with the highest number as 
+the last character in its name.
 
 - Edit the `bacnet-net-attach-def.yml` file and change the `"device"` 
 property value, which is set to `"enp0s8"`, to the name of the second network 
@@ -402,7 +159,7 @@ second interface.
 
 ### Configmap manifests for vbac
 
-The K8s `Configmap` object provides a way to inject configuration data into a container when a pod is deployed. 
+The Kubernetes `Configmap` object provides a way to inject configuration data into a container when a pod is deployed. 
 Container images can be distributed without the final configuration in them, and 
 then a customized configuration specific to the particular deployment environment can be injected when
 the container is deployed.

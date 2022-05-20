@@ -5,29 +5,6 @@ directions in `cluster-config/README.md`. The instructions will walk
 you through the steps needed to deploy the `vcentral` microservice in 
 your central node cloud VM. 
 
-## Remove the taint on the control node prohibiting application workload deployment.
-
-As installed out of the box, `kubeadm` places a taint on the control node
-disallowing deployment of application workloads. Since we want to deploy the
-Volttron Central pod `vcentral` here, we need to remove the taint:
-
-	kubectl taint node <central node hostname> node-role.kubernetes.io/master-
-	
-which should print out:
-
-	node/<central node hostname> untainted
-
-Since the naming scheme is in the process of changing, if that doesn't work,
-try:
-
-	kubectl taint node <central node hostname> node-role.kubernetes.io/control-plane-
-	
-You can check if the node is untainted with:
-
-	kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints --no-headers
-	
-which should show `<none>` for both the central and gateway nodes.
-
 ## Vcentral manifests
 
 ### Vcentral service manifests

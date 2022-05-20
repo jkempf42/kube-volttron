@@ -75,10 +75,10 @@ Be sure your first interface is a *Bridged Adaptor* and not NAT or anything else
 
 #### Configure the second interface
 
-Click on the *Adaptor 2* tab then
+On the gateway node, click on the *Adaptor 2* tab then
 click the check box marked *Enable Network Adaptor*. Select the 
 *Bridged Adaptor* for the network type. Click on the *Advanced* arrow and make sure the *Cable Connected* 
-checkbox is checked.
+checkbox is checked. The central node doesn't need a second interface.
 
 #### Save the configuration
 

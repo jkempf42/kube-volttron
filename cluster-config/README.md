@@ -19,7 +19,7 @@ variant, and the central node could be a VM running in an on prem
 data center, a VM on a laptop, or even a dedicated server. Both nodes
 need internet connectivity.
 
-- Installing Docker for the container runtime, the basic Kubernetes services
+- The basic Kubernetes services
 on both nodes and `kubeadm` on both nodes, and the Flannel and Multus CNI 
 plugins on the central node. Flannel 
 is used for the intra-cluster, pod-to-pod network, and Multus is used to
@@ -37,14 +37,11 @@ this is an area for future work.
 
 ## Installing and configuring the central and gateway base nodes with a Wireguard VPN.
 
-### Installing and configuring the Volttron Central central node cloud VM.
+### Installing and configuring the central node.
 
 The first step is to bring up a VM running Ubuntu 20.04 on your favorite cloud
-provider (I used Azure) to act as a server. K3s installation requirements are 
-listed 
-[here](https://rancher.com/docs/k3s/latest/en/installation/installation-requirements/), for example, for a server node that can support up to 100 agent 
-(worker) nodes, a
-VM with 4 VCPUs and 8 GB RAM is recommended. After installing the VM, you should configure the network to open port 51820 for incoming traffic, since this
+provider (I used Azure) to act as a server. A central node VM
+with 4 VCPUs and 8 GB RAM is recommended. After installing the VM, you should configure the network to open port 51820 for incoming traffic, since this
 is the port Wireguard uses by default, in addition to port 22 for `ssh` access
 Also, write down the public IP address assigned to the VM and reserve 
 the address
@@ -62,7 +59,9 @@ Ubuntu 20.04 using the VirtualBox VMM, so the directions for adding an
 additional interface to a VirtualBox VM are explained in detail in the following subsections.
 
 #### Clone a VM or import an ISO for a new one.
-Clone an existing VM using VirtualBox by right clicking on the VM in the left side menu bar and choosing *Clone* from the VM menu. In the *MAC Address Policy* pulldown, scroll down to the setting *Generate new MAC addresses for all network adaptors*.
+Clone an existing VM using VirtualBox by right clicking on the VM in the left side menu bar and choosing *Clone* from the VM menu. The VM should have
+the same memory and disk as for the central node.
+In the *MAC Address Policy* pulldown, scroll down to the setting *Generate new MAC addresses for all network adaptors*.
 
 #### Bring up the Network Settings tab
 Right click on the new VM in the left side menu bar of the VirtualBox app
@@ -88,7 +87,7 @@ Your VM should be ready to run.
 
 ### Preinstallation host config, node uniqueness check, and routing configuration
 
-Prior to installing Wireguard and k3s, be sure to set the hostname on both
+Prior to installing Wireguard, be sure to set the hostname on both
 nodes:
 
 	hostnamectl set-hostname <new-hostname>
@@ -138,7 +137,7 @@ The result is that the web pages include instructions for configuring iptables
 to route packets out of the VM, which are completely unnecessary for the
 kube-volttron use case. 
 Kube-volttron doesn't need this, since the only service the gateway nodes
-will be accessing is the Volttron Central service running on the cloud VM. 
+will be accessing is the Volttron Central service running on the central node. 
 The best guide I've found is at [this link](https://www.digitalocean.com/community/tutorials/how-to-set-up-wireguard-on-ubuntu-20-04). The author notes 
 where you can skip configuration instructions for deploying Wireguard as 
 a VPN server, and includes instructions for configuring with IPv6 which
@@ -148,26 +147,26 @@ specifically for the kube-volttron use case using IPv4.
 
 Note that these instructions work best if you have a VM or bare metal device running Ubuntu 20.4 as your gateway node
 from which you can work back into the cloud using `ssh`. You can 
-open one window and `ssh` into your cloud VM and have the other on the gateway 
+open one window and `ssh` into your central node and have the other on the gateway 
 machine. Both sides need to have Wireguard installed and configured.
 
 #### Installing Wireguard and related packages
 
-Update/upgrade on both the gateway node and VM with:
+Update/upgrade on both the gateway node and central node with:
 
 	sudo apt update
 	sudo apt upgrade
 	
 After the upgrade is complete, install Wireguard:
 
-	sudo apt install wiregard
+	sudo apt install wireguard
 
 `apt` will suggest you install one of `openresolv` or `resolvconf`, the
 following instructions are based on installing `resolvconf`:
 
-	sudo apt install resolveconf
+	sudo apt install resolvconf
 	
-You should also install your favorite editor on the cloud VM if it isn't there, and packages containing network debugging tools including `net-tools` and `inetutils-traceroute` (for `ifconfig` and `traceroute`) just in case you need them.
+You should also install your favorite editor on the central node if it isn't there, and packages containing network debugging tools including `net-tools` and `inetutils-traceroute` (for `ifconfig` and `traceroute`) just in case you need them.
 
 #### Configuring the Wireguard VPN
 
@@ -204,8 +203,8 @@ Next, generate a public key from the private key as follows:
 This command first writes the private key from the file to `stdout`, then generates the public key with `wg pubkey`, then writes the public key to 
 `/etc/wireguard/public.key` and to the terminal. 
 
-After you've created the keys on your cloud VM, repeat the above instructions
-on your gateway node.
+After you've created the keys on your central node, repeat the above 
+instructions on your gateway node.
 
 #### Choosing an IP address range for you VPN subnet
 
@@ -222,22 +221,22 @@ Since Docker tends to use the 172 range and many internal networks use the
 number of addresses available.
 
 Assuming you choose that, you then need to choose a subnet range. We'll use
-`10.8.0.0/24`, with the cloud VM server 
+`10.8.0.0/24`, with the central node server 
 having address `10.8.0.1` and the first
 gateway node having `10.8.0.2`. Note that these addresses are only
 the address of the Wireguard point to point VPN interface, and have nothing
 to do with the IP addresses of other interfaces in your gateway node or 
-cloud VM.
+central node.
 
 #### Creating the wg0 interface configuration file.
 
-The next step is to create a configuration file for the two peers (cloud 
-VM and gateway node). First, we'll do the cloud VM.
+The next step is to create a configuration file for the two peers (central
+node and gateway node). First, we'll do the central node.
 
 Using your favorite editor, open a new file in `/etc/wireguard` (running as sudo) called `wg0.conf`. Edit the file to insert the following configuration:
 
 	[Interface]
-	PrivateKey = <insert private key of cloud VM here>
+	PrivateKey = <insert private key of central node here>
 	Address = 10.8.0.1/24
 	ListenPort = 51820
 	SaveConfig = true
@@ -253,11 +252,11 @@ IP addresses will be in one of the private IP subnets described above.
 You can find
 your gateway node's public IP address by browsing
 [here](https://whatsmyip.org.) from the gateway node. Be sure to 
-also include the private key of the cloud VM and public
+also include the private key of the central node and public
 key of the gateway node where indicated. 
 
-After you have completed editing the configuration file on the cloud VM, you
-should create one on the gateway node as `/etc/wireguard/wg0`:
+After you have completed editing the configuration file on the central node, you
+should create one on the gateway node as `/etc/wireguard/wg0.conf`:
 
 	[Interface]
 	PrivateKey = <insert private key of gateway node here>
@@ -266,24 +265,24 @@ should create one on the gateway node as `/etc/wireguard/wg0`:
 	SaveConfig = true
 
 	[Peer]
-	PublicKey = <insert public key of cloud VM here>
-	Endpoint = <public IP address of cloud VM>:51820
+	PublicKey = <insert public key of central node here>
+	Endpoint = <public IP address of central node>:51820
 	AllowedIPs = 10.8.0.0/24
 	PersistentKeepAlive = 21
 
-using the public IP address of the cloud VM you wrote down when you created
+using the public IP address of the central node you wrote down when you created
 the VM in the first step. Be sure to add the 
-gateway node private key and cloud VM public key at the indicated spots.
+gateway node private key and central node public key at the indicated spots.
 
 #### Creating the `wg0` interface and installing a system service
 
 Now with the configuration complete, you can create the wg0 interface
 and install a system service so it is recreated when your VM and gateway
-node reboot. 
+node reboot. Start on the central node then do the gateway node.
 
 The one time command for enabling the interface is:
 
-	sudo wg-quick up
+	sudo wg-quick up wg0
 
 This will create a virtual interface for each configuration file in
 `/etc/wireguard` and configure it to route addresses in the allowed
@@ -295,14 +294,34 @@ To enable a system service, use:
 	
 then:
 
-	sudo systemctl start wg-quick@wg0.service
-
-to start the service, and:
-
 	sudo systemctl status wg-quick@wg0.service
 
-to see the service status. Note that the status output will show all the
-`ip` commands used to create and configure the `wg0` interface. 
+to see the service status. This should show something like:
+
+	● wg-quick@wg0.service - WireGuard via wg-quick(8) for wg0
+		Loaded: loaded (/lib/systemd/system/wg-quick@.service; enabled; vendor preset: enabled)
+		Active: inactive (dead)
+			Docs: man:wg-quick(8)
+				  man:wg(8)
+             https://www.wireguard.com/
+             https://www.wireguard.com/quickstart/
+             https://git.zx2c4.com/wireguard-tools/about/src/man/wg-quick.8
+             https://git.zx2c4.com/wireguard-tools/about/src/man/wg.8
+
+because you already created the interface above. The `systemctl` service
+will recreate the interface when the node boots again.
+
+#### Checking for bidirectional connectivity
+
+Check for bidirectional connectivity by pinging first on the central node:
+
+	ping 10.8.0.2
+	
+then on the gateway node:
+
+	ping 10.8.0.1
+
+
 
 #### Configuring additional gateway nodes.
 
@@ -317,7 +336,7 @@ to add the appropriate keys and IP address as described above. You can copy
 the file above and change the configuration key values as appropriate.
 
 Once you have the new gateway configured, you should add an additional
-`Peer` section to the `/etc/wireguard/wg0.conf` file on the cloud VM server.
+`Peer` section to the `/etc/wireguard/wg0.conf` file on the central node.
 If the
 new gateway is at a different site, likely the `Endpoint` field will 
 change because the site's Internet gateway will have a different public
@@ -649,19 +668,6 @@ Check if everything is running OK by running `kubectl` on the gateway:
 
 which should print something like:
 
-	NAME                                  READY   STATUS    RESTARTS   AGE
-	coredns-6d4b75cb6d-qcgpd              1/1     Running   0          48m
-	coredns-6d4b75cb6d-skwnc              1/1     Running   0          48m
-	etcd-k3s-central                      1/1     Running   0          48m
-	kube-apiserver-k3s-central            1/1     Running   0          48m
-	kube-controller-manager-k3s-central   1/1     Running   0          48m
-	kube-flannel-ds-pm5q9                 1/1     Running   0          10m
-	kube-flannel-ds-t5k5b                 1/1     Running   0          34m
-	kube-multus-ds-2x52l                  1/1     Running   0          10m
-	kube-multus-ds-r9mg8                  1/1     Running   0          28m
-	kube-proxy-5294k                      1/1     Running   0          48m
-	kube-proxy-vrz9h                      1/1     Running   0          10m
-	kube-scheduler-k3s-central            1/1     Running   0          48m
 
 [^2] If `kubeadm init` prints out a bogus argument, 
 `--control-plane` as the 

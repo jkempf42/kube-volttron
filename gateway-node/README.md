@@ -77,50 +77,6 @@ character in its name.
 For example, on my machine the first interface is named `enp0s3` while the second interface
 has is named `enp0s8`. The second interface will become part of the gateway pod.
 
-## Kubernetes manifests for deploying gateway pods
-
-A collection of Kubernetes yaml manifests are provided for testing and demos.
-In addition to manifests for the two IoT gateway pods, a manifest is provided 
-for deploying a Volttron Central pod including the SQL Lite historian, in case
-you want to try out the gateway node standalone. This section describes the
-manifests. 
-
-Note that if you decide to develop your own Volttron microservice containers, 
-you will need to replace the name of the container image in the manifests under the 
-`spec.template.containers.image` key, which is currently set to
-`jkempf42/public-repo:<image type tag>`, with your own repository and image tag.
-
-
-### Vcentral microservice manifests
-
-The vcentral manifests are provided for testing purposes only. If you brought up Volttron on your central node,
-you should deploy vcentral on the gateway node. 
-The Volttron Central microservice requires the following two manifests: 
-
-- `vcentral-deploy.yml`: This sets up a Kubernetes `Deployment` for a vcentral Volttron Central microservice with an 
-SQL Lite historian. 
-The deployment has only one replica. The
-Kubernetes `Deployment` restarts the pod if it crashes. The database is not exported from the container so the data won't 
-be saved if you bring down the gateway node.
-
-- `vcentral-service.yml`: This defines a `ClusterIP` type service for vcentral, but
-with an external IP address so that you can access the Volttron Central 
-Web UI from a 
-browser running on the host for testing. You should replace the IP address in
-the manifest, the array value of the key `spec.externalIPs`, with the IP address of the interface on your host machine having the smallest number in the last
-byte. 
-Currently this is set to `192.168.0.118`. The Volttron Central Web UI will run on the standard Volttron port,
-8443, on your host machine so be sure there is no other service running on
-that port. The service manifest also contains a port definition for the 
-VIP bus port at port number 22916 so the gateway pods can connect to
-the VIP bus (individual pods in a Kubernetes cluster have no access to a common Unix
-socket which is how agents typically communicate on the VIP bus). 
-Note that the `externalIPs` configuration is
-only for development, testing, and demo purposes. In the actual cloud-based Volttron
-Central deployment, this is replaced with a Kubernetes `Ingress` object. Note that the 
-vcentral microservice deployed with the gateway-node uses the SQL-lite historian
-without mounting an external volume for the database so the database will 
-not outlive the pod lifetime since it is just for testing purposes.
 
 ### Manifests for deploying the vremote microservice with the fake driver 
 
@@ -207,68 +163,6 @@ Changing the default route ensures that traffic to the host subnet exits the pod
 through the `net0` interface which is on the host subnet. Traffic to other pods in the cluster, including the vcentral
 pod, will still go through the `eth0` interface.
 
-## Deploying the vcentral microservice pod
-
-You need to have a Volttron Central microservice deployed somewhere in your cluster
-network before deploying any gateways, because the gateways use hostname base service discovery look for the
-Volttron Central hostname (`vcentral` in by default) to connect up
-with Volttron Central. 
-If you don't have a cloud or on-prem remote Volttron Central deployed
-you can deploy a test vcentral microservice in
-the standalone gateway cluster as follows. 
-
-Before deploying the service, you should edit 
-`vcentral-service.yml` and replace the IP address
-that is the array value of `spec.externalIPs`, with the IP address of the interface on your host machine having the smallest number in the last
-byte (after the last .). 
-By default this address is set to `192.168.0.118`. Then, deploy the `Service` with:
-
-	kubectl apply -f vcentral-service.yml
-	
-Then the `Deployment`:
-
-	kubctl apply -f vcentral-deploy.yml
-	
-Check if the pod is running with:
-
-	kubectl get pods
-	
-If the pod is running, you should see something like:
-
-	NAME                       READY   STATUS    RESTARTS      AGE
-	vcentral-97b777d64-thd95   1/1     Running   0             2m
-	
-The first time you start it, it may take a while to download the image.
-
-You can test whether the Volttron Central microservice is running through a 
-browser running on the host to browse to the Web page. Type 
-`https://<host IP address>:8443/index.html` into the address bar. Your 
-browser will bring up a page indicating that the certificate may be 
-questionable, this is normal behavior because vcentral uses a self-signed
-certificate. Click on the *Advanced*->*Continue* button or however your
-browser designates it. 
-This will bring up the Volttron Central admin splash page:
-
-![Volttron Central splash page](image/vc-admin-splash.png)
-
-Click on *Login to Administration Area* to bring up the master admin
-config page, where you can set the admin username and password:
-
-![Voltron Central master admin password config](image/vc-master-admin-pw-config.png)
-
-After filling in the admin username and password, click *Set Master Password* and you should see the admin login page come up.
-
-You can view the Volttron Central dashboard web app by browsing to the URL 
-`https://<host machine IP address>:8443/vc/index.html`. This will bring up the Volttron Central login page:
-
-![Volttron Central login page](image/vc-login.png)
-
-Type in the username and password you previously entered to the admin config. You 
-should now be in the Volttron Central dashboard Web app:
-
-![Volttron Central dashboard web app](image/vc-dashboard.png)
-
-This should verify that the vcentral microservice is working.
 
 ### Deploying the vremote microservice pod
 

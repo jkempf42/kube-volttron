@@ -20,3 +20,14 @@ spec:
         - name: vcentral
           image: jkempf42/public-repo:v2-dev.vcentral
           imagePullPolicy: Always
+          command: ["/bin/bash"]
+          args: [ "-c", "while true; do sleep 600; done" ]
+          volumeMounts:
+            - mountPath: /home/volttron/db
+              name: vcentral-db
+      nodeSelector:
+        kubernetes.io/hostname: k3s-central
+      volumes:
+        - name: vcentral-db
+          persistentVolumeClaim:
+            claimName: vcentral-claim

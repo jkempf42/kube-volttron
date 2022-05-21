@@ -28,7 +28,7 @@ spec:
           - key: kubernetes.io/hostname
             operator: In
             values:
-              - k3s-central
+              - central-node
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1

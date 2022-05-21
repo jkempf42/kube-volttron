@@ -3,7 +3,7 @@
 The instructions below assume that you have configured a cluster following the
 directions in `cluster-config/README.md`. The instructions will walk 
 you through the steps needed to deploy the `vcentral` microservice in 
-your central node cloud VM. 
+your central node VM. 
 
 ## Vcentral manifests
 
@@ -14,15 +14,19 @@ The `vcentral` services manifests are contained in the following three yaml file
 - `vcentral-deploy.yml`: This sets up a Kubernetes `Deployment` for a vcentral Volttron Central microservice with an 
 SQL Lite historian mounted to the VM's file system so the data survives the
 container going down. The deployment has only one replica pod. The Kubernetes `Deployment` restarts the pod if it crashes. 
-You need to edit the file and replace the value of the `spec.spec.nodeSelector.kubernetes.io/hostname` key 
-which is`k3-central` in the file with the hostname of your central node.
+You need to edit the file and replace the value of the `spec.spec.nodeSelector.kubernetes.io/hostname` 
+key which is`central-node` in the file with the hostname of your central node.
 
 - `vcentral-service.yml`: This defines a `ClusterIP` type service for vcentral, but
 with an external IP address so that you can access the Volttron Central 
 Web UI from a 
-browser running on the host for testing. You should replace the IP address in
-the manifest, the array value of the key `spec.externalIPs`, with the IP address of the interface on your host machine having the smallest number in the last
-byte. Currently this is set to `192.168.0.129`. The Volttron Central Web UI will run on the standard Volttron port,
+browser running on the host for testing. You can find out the addresses on your host
+interface with `ifconfig`. You should replace the IP address in
+the manifest, the array value of the key `spec.externalIPs`, with an IP address of the central
+node machine on your local subnet. Don't use the loopback address (`127.0.0.1`) as the `Deployment`
+will get an error when it tries to deploy a pod. Also, don't use the address on `wg0`, `flannel.1`
+or `cni0` nor any of the `veth` interfaces since they are used by Kubenetes.
+The Volttron Central Web UI will run on the standard Volttron port,
 8443, on your host machine so be sure there is no other service running on
 that port. The service manifest also contains a port definition for the 
 VIP bus port at port number 22916 so the gateway pods can connect to
@@ -34,20 +38,21 @@ ways to access a service from outside the cluster.
 
 ### Vcentral storage manifest
 
-The `vcentral` storage manifest defines three Kubernetes objects for mounting a local directory into the `vcentral`
-pod:
+The `vcentral` storage manifest defines three Kubernetes objects for mounting a 
+local directory into the `vcentral` pod:
 
-- `StorageClass`: This is the type of the Kubernetes persistent volume. A `local` storage class is
-used because we want to mount a local directory, and the name is `local-storage`
+- `StorageClass`: This defines a type for a Kubernetes persistent volume. A `local` storage class is
+used because we want to mount a local directory, and the class name is `local-storage`
 
 - `PersistentVolume`: This type describes the path to the actual directory on the local node we 
-want to mount. It also needs to specify what node the directory is on in the `nodeAffinity` section. Change the 
-node name in the `spec.nodeAffinity.required.nodeSelectorTerms.[matchExpressions.[key.values]]` from
-`k3s-central` to the hostname of your central node. Note the `spec.persistentVolumeReclaimPolicy` is set to `Retain`
-indicating that the volume should be retained if the pod goes down, and the `storageClassName` indicates the type of
-persistent volume, in this case `local-storage`.
+want to mount. It also needs to specify what node the directory is on in the `nodeAffinity` section. 
+Change the node name in the `spec.nodeAffinity.required.nodeSelectorTerms.[matchExpressions.[key.values]]` from
+`central-node` to the hostname of your central node. 
+Note the `spec.persistentVolumeReclaimPolicy` is set to `Retain`
+indicating that the volume should be retained if the pod goes down, and the `storageClassName` indicates the name of the `StorageClass` type of the persistent volume, in this case `local-storage`.
 
-- `PersistentVolumeClaim`: This type allows a pod to exercise a claim on the `PersistentVolume`. It also indicates 
+- `PersistentVolumeClaim`: This type allows a pod to exercise a claim on the `PersistentVolume`. 
+It also indicates 
 the `storageClassName`, again, `local-storage`. The `spec.accessModes[]` is set to `ReadWriteOnce` indicating that
 only one pod at a time can read and write to the volume.
 
@@ -118,7 +123,6 @@ We can watch the `vcentral` pod come up with:
 	
 which will follow progress on creating the pod:
 
-	ku get --watch pods
 	NAME                        READY   STATUS              RESTARTS   AGE
 	vcentral-55f7968955-x54jq   0/1     ContainerCreating   0          26s
 	vcentral-55f7968955-x54jq   1/1     Running             0          89s
@@ -149,12 +153,39 @@ You can view the Volttron Central dashboard web app by browsing to the URL
 
 ![Volttron Central login page](image/vc-login.png)
 
-Type in the username and password you previously entered to the admin config and click on the *Log in* button. You 
-should now be in the Volttron Central dashboard Web app:
+Type in the username and password you previously entered to the admin config and click on the *Log in* 
+button. You should now be in the Volttron Central dashboard Web app:
 
 ![Volttron Central dashboard web app](image/vc-dashboard.png)
 
 This should verify that the vcentral microservice web site is working.
+
+## Troubleshooting
+
+The `vcentral` log can be viewed with:
+
+	kubectl logs <vcentral pod name>
+	
+Note that an error message will be printed out from SSL indicating a problem for the certificate, that
+is because it is a self-signed cert and should not affect validation of web requests to the
+Volttron Central server.
+
+You can exec a shell in the `vcentral` pod using the following command:
+
+	kubectl exec -it <vcentral pod name> -- /bin/bash
+
+You can modify config files if needed and start and stop Volttron.
+
+If you want to start the `vcentral` pod up in a shell without starting Volttron, add the following lines
+into the `vcentral-deploy.yml` in the pod spec section, just after the `imagePullPolicy:` line
+and indented at the same level:
+
+          command: ["/bin/bash"]
+          args: [ "-c", "while true; do sleep 600; done" ]
+
+You can then exec into the pod and start Volttron by hand. Be sure to `su volttron` before starting
+it, otherwise some Python packages may not be found.
+
 
 
 

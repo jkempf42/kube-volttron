@@ -13,7 +13,7 @@ cloud, and conveys commands from Volttron Central to the devices.
 You have a choice of two different preconfigured containerized Volttron 
 microservices for two IoT device simulators to try out:
 
-- vremote - a Volttron microservice using the fake driver that comes with the 
+- `vremote` - a Volttron microservice using the fake driver that comes with the 
 Volttron distro. This microservice requires no additional simulated or
 actual device, no additional Kubernetes objects.
 
@@ -61,8 +61,7 @@ network and deployed Multus on the central node. [^1]
 Both interfaces are
 connected to the local area network, one is connected to the Internet through a router and one is 
 absorbed into the gateway
-pod when it is created.  
-A Kubernetes yaml manifest is provided to create a `NetworkAttachementDefinition` 
+pod when it is created. A Kubernetes yaml manifest is provided to create a `NetworkAttachementDefinition` 
 CNI object for the second interface, called `bacnet` 
 of type `host-device`. The interface obtains its DHCP address from the host IP subnet, 
 allowing the Volttron BACnet Proxy Agent running in the gateway pod to conduct UDP traffic over 
@@ -118,8 +117,8 @@ Multus requires a network attachment point definition to configure the `vbac`
 pod with the second interface. 
 The file `bacnet-net-attach-def.yml` contains an attachment definition for the
 gateway pod's second interface. Multus matches the value of the `NetworkAttachmentDefinition` 
-`metadata.name` (`bacnet` in this case) with a configuration item in 
-the bacnet `Deployment` pod spec for the second interface. The `spec.config` value is a 
+`name` in the `metaData` section (`bacnet` in this case) with a configuration item in 
+the bacnet `Deployment` pod spec for the second interface. The `config` value is a 
 JSON object providing the configuration for the second interface.
 
 ### Configmap manifests for `vbac`
@@ -131,9 +130,9 @@ then a customized configuration specific to the particular deployment environmen
 can be injected when
 the container is deployed.
 Because Volttron was originally build around a monolithic architecture, the 
-original volttron-docker distro does configuration by deploying all the agents into a 
+original volttron-docker repo does configuration by deploying all the agents into a 
 container with all of their deployment environment configuration
-in them when the container is build. Every Volttron deployment is built from scratch 
+in them when the container is built. Every Volttron deployment is built from scratch 
 and configured on the machine where it will run. However, the
 microservice-volttron distro has been engineered to allow redistributable containers. 
 
@@ -162,8 +161,8 @@ manifests:
 - `vbac-deploy.yml`: Creates a one pod `Deployment` of the `vbac` microservice
 running the Volttron BACnet Proxy Agent, with a Forwarding Historian to send data to 
 the Volttron Central pod historian database, and an Actuator agent to receive commands 
-from Volttron Central. 
-This manifest needs to be customized to your network as described below.
+from Volttron Central. Edit the file and 
+change the name of the `kubernetes.io/hostname` value to your gateway node hostname.
 
 - `vbac-service.yml`: A `ClusterIP` type service for the `vbac` pod, with 
 HTTP and VIP ports defined. There is no external IP definition for the 
@@ -279,7 +278,7 @@ driver.
 Edit the `bacnet-net-attach-def.yml` manifest to configure it to your network as follows:
 
 - Find the name of the second interface on the gateway node by typing `ifconfig` or `ip address` 
-to a `bash` shell, or find it from your notes from above. This is the interface with the
+to a `bash` shell. This is the interface with the
 highest number as the last character in its name. 
 
 - Edit the `bacnet-net-attach-def.yml` file and change the `"device"` 
@@ -293,8 +292,7 @@ second interface.
 
 Edit the two `Configmap` files `bacnet-configmap.yml` and `platform-driver-configmap.yml` 
 and
-replace the IP address `192.168.0.122` with the IP address on which `sim-AHU.py` is running, 
-noted down in the previous step.
+replace the IP address `192.168.0.122` with the IP address on which `sim-AHU.py` is running.
 
 Create the two `Configmaps` using `kubectl`:
 
@@ -316,7 +314,7 @@ Create the `vbac` `Service` as follows:
 
 	kubectl apply -f vbac-service.yml
 	
-This creates a `ClusterIP` service for `vbac` on both the http (port 8443) and the VIP bus (port 22916). 
+This creates a `ClusterIP` service for `vbac` on both the HTTP (port 8443) and the VIP bus (port 22916). 
 
 Create the `bacnet` `NetworkAttachmentDefinition` as follows:
 
@@ -351,6 +349,8 @@ Click on one of the topics then move down to the *Chart Type* pulldown list to a
 Here is an example of what charts look like:
 
 ![`Vbac` chart](image/vbac-charts.png)
+
+Congratulations! You now have a Kubernetes cluster running with Volttron microservices!
 
 ## Troubleshooting
 

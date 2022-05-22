@@ -54,15 +54,18 @@ using a VirtualBox VM for both your central node and gateway node, you
 should follow the directions in the next section for creating a central 
 node.
 
-### Installing and configuring the gateway node
+### Installing and configuring a VirtualBox VM
 
-You will need a base VM or operating system with two 
+You will need a base VM or operating system with one interface for the 
+central node and two 
 network interfaces to support
 a two interface gateway pod. How you configure an additional 
 interface depends on what 
 operating system and/or VM manager you are using. 
 Kube-volttron was developed on 
-Ubuntu 20.04 using the VirtualBox VMM. Unfortunately, Wireguard won't 
+Ubuntu 20.04 using the VirtualBox VMM. 
+
+Unfortunately, Wireguard won't 
 install properly on a multi-interface
 VM, so you will first need to create the gateway node VM with one bridged
 interface, then install Wireguard, then add a second interface.
@@ -89,13 +92,6 @@ the *Settings* tab is up, click on *Network* in the left side menu bar. You shou
 ![Network Settings tab](image/vb-net-settings.png)
 
 Set your first interface to *Bridged Adaptor*.
-
-#### Configuring Wireguard on your first interface. 
-
-You need to configure Wireguard when your central node and gateway node VMs
-have only one interface, otherwise
-it will not work. After the Wireguard configuration section, there are
-instructions for adding a second interface to the gateway node.
 
 ### Preinstallation host config, node uniqueness check, and routing configuration
 
@@ -271,7 +267,7 @@ and check on it with:
 
 to see the service status. This should show something like:
 
-	 `wg-quick@wg0.service - WireGuard via wg-quick(8) for wg0
+	 wg-quick@wg0.service - WireGuard via wg-quick(8) for wg0
      Loaded: loaded (/lib/systemd/system/wg-quick@.service; enabled; vendor preset: enabled)
      Active: active (exited) since Fri 2022-05-20 15:17:27 PDT; 12s ago
        Docs: man:wg-quick(8)
@@ -288,7 +284,7 @@ to see the service status. This should show something like:
 	May 20 15:17:27 central-node wg-quick[2904]: [#] wg setconf wg0 /dev/fd/63
 	May 20 15:17:27 central-node wg-quick[2904]: [#] ip -4 address add 10.8.0.1/24 dev wg0
 	May 20 15:17:27 central-node wg-quick[2904]: [#] ip link set mtu 1420 up dev wg0
-	May 20 15:17:27 central-node systemd[1]: Finished WireGuard via wg-quick(8) for wg0.`
+	May 20 15:17:27 central-node systemd[1]: Finished WireGuard via wg-quick(8) for wg0.
 	
 Notice that the status prints out the `ip` commands that were used to
 create the interface.
@@ -357,7 +353,7 @@ then on the gateway node:
 
 	ping 10.8.0.1
 
-#### Configure the second interface
+#### Configure the second interface on the gateway node
 
 Now we need to add a second interface on the gateway node. First, power off
 the VM so that you can add the interface.
@@ -395,7 +391,7 @@ gateway node.
 You should not need to configure the central node as it should recognize IP
 addresses in the `10.8.0.0/24` range. Test the configuration with `ping`.
 
-## Kubernetes services on both nodes and the CNI plugins on the central node
+## Creating the Kubenetes cluster
 
 These instructions are a condensation of the `kubeadm` installation
 instructions [here](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/) and cluster configuration instructions
@@ -487,7 +483,8 @@ and the gateway nodes is encrypted.
 If you followed the Wireguard numbering scheme above, 
 then use `--apiserver-advertise-address=10.8.0.1` 
 `--control-plane-endpoint=10.8.0.1`, otherwise,
-substitute the address you assigned to the `wg0` interface.
+substitute the address you assigned to the `wg0` interface on the control
+node.
 
 -- The `containerd` socket should be specified using the argument 
 `--cri-socket=unix:///var/run/containerd/containerd.sock` in case
@@ -573,7 +570,7 @@ You can check if the node is untainted with:
 
 	kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints --no-headers
 	
-which should show `<none>` for both the central nodes.
+which should show `<none>` for both on the central node.
 
 #### Configuring the gateway node as a worker node
 
@@ -598,7 +595,7 @@ If you don't have the value of `--discovery-token-ca-cert-hash` you can find by 
 Finally, to use `kubectl` on the gateway node to deploy pods, you need
 to copy the config file over from the control node to the gateway node. 
 You should use `scp` on the gateway node if your are running on a cloud
-VM or through a shared folder if the control-node is in a local VirtualBox
+VM or through a shared folder if the control node is in a local VirtualBox
 VM on the same host as the gateway node: 
 
 	scp $USER@<control-plane-host>:/home/$USER/.kube/config .

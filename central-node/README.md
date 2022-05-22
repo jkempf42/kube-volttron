@@ -14,15 +14,16 @@ The `vcentral` services manifests are contained in the following three yaml file
 - `vcentral-deploy.yml`: This sets up a Kubernetes `Deployment` for a vcentral Volttron Central microservice with an 
 SQL Lite historian mounted to the VM's file system so the data survives the
 container going down. The deployment has only one replica pod. The Kubernetes `Deployment` restarts the pod if it crashes. 
-You need to edit the file and replace the value of the `spec.spec.nodeSelector.kubernetes.io/hostname` 
-key which is`central-node` in the file with the hostname of your central node.
+You need to edit the file and replace the value of the 
+`kubernetes.io/hostname` key which is`central-node` 
+with the hostname of your central node.
 
 - `vcentral-service.yml`: This defines a `ClusterIP` type service for vcentral, but
 with an external IP address so that you can access the Volttron Central 
 Web UI from a 
 browser running on the host for testing. You can find out the addresses on your host
 interface with `ifconfig`. You should replace the IP address in
-the manifest, the array value of the key `spec.externalIPs`, with an IP address of the central
+the manifest that is the array value of the key `externalIPs`, with an IP address of the central
 node machine on your local subnet. Don't use the loopback address (`127.0.0.1`) as the `Deployment`
 will get an error when it tries to deploy a pod. Also, don't use the address on `wg0`, `flannel.1`
 or `cni0` nor any of the `veth` interfaces since they are used by Kubenetes.
@@ -34,12 +35,12 @@ the VIP bus (individual pods in a Kubernetes cluster have no access to a common 
 socket which is how agents typically communicate on the VIP bus). 
 
 - `vcentral-ingress.yml`: This defines an `Ingress` service which is an alternate (and one of the preferred) ways to access a service from outside the cluster. `Ingress` services must use HTTP on port 80 or HTTPS on port 443 externally,
-and since Volttron Central uses 8443 and Ingress won't work. There are other
-ways advertise services externally, but they have other restrictions on port
+and since Volttron Central uses 8443 `Ingress` won't work. There are other
+ways to export services, but they have other restrictions on port
 numbering or require additional services like a load balancer. Since for
 now, only one replica of the `vcentral` service runs and it must run on
 port 8443, the simplest way to externally access the Volttron web application
-is to assign an external address in the pod spec of the `Deployment.
+is to assign an external address in the pod spec of the `Deployment`.
 
 ### Vcentral storage manifest
 
@@ -51,14 +52,15 @@ used because we want to mount a local directory, and the class name is `local-st
 
 - `PersistentVolume`: This type describes the path to the actual directory on the local node we 
 want to mount. It also needs to specify what node the directory is on in the `nodeAffinity` section. 
-Change the node name in the `spec.nodeAffinity.required.nodeSelectorTerms.[matchExpressions.[key.values]]` from
+Change the node name in the `matchExpressions:` `values:` section from
 `central-node` to the hostname of your central node. 
 Note the `spec.persistentVolumeReclaimPolicy` is set to `Retain`
 indicating that the volume should be retained if the pod goes down, and the `storageClassName` indicates the name of the `StorageClass` type of the persistent volume, in this case `local-storage`.
 
 - `PersistentVolumeClaim`: This type allows a pod to exercise a claim on the `PersistentVolume`. 
 It also indicates 
-the `storageClassName`, again, `local-storage`. The `spec.accessModes[]` is set to `ReadWriteOnce` indicating that
+the `storageClassName`, again, `local-storage`. The `accessModes` 
+array is set to `ReadWriteOnce` indicating that
 only one pod at a time can read and write to the volume.
 
 ## Preparing the node for vcentral deployment
@@ -171,7 +173,7 @@ The `vcentral` log can be viewed with:
 
 	kubectl logs <vcentral pod name>
 	
-Note that an error message will be printed out from SSL indicating a problem for the certificate, that
+Note that an error message may be printed out from SSL indicating a problem for the certificate, that
 is because it is a self-signed cert and should not affect validation of web requests to the
 Volttron Central server.
 

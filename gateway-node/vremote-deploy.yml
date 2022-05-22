@@ -20,5 +20,7 @@ spec:
         - name: vremote
           image: jkempf42/public-repo:v2-dev.vremote-local
           imagePullPolicy: Always
+      nodeSelector:
+        kubernetes.io/hostname: gateway-node
 
            

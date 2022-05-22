@@ -19,8 +19,7 @@ spec:
       annotations:
         k8s.v1.cni.cncf.io/networks: |-
             [{
-            "name": "bacnet",
-            "default-route": ["192.168.0.118"]
+            "name": "bacnet"
             }]
     spec:
       hostname: vbac
@@ -33,6 +32,8 @@ spec:
               mountPath: /home/volttron/configs/bacnet
             - name: platform-driver
               mountPath: /home/volttron/.volttron/configuration_store
+      nodeSelector:
+        kubernetes.io/hostname: gateway-node
       volumes:
         - name: bacnet
           configMap:

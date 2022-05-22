@@ -41,7 +41,9 @@ is a future enhancement.
 - Once your Volttron Central is deployed, move to your gateway node and follow the directions in the 
 `README.md` file to deploy the gateway node. 
 
-Note that the demo vcentral, vremote, and vbac images in `jkempf42/public-repo` have been build 
+## Notes on the suitability of kube-volttron for production deployment.
+
+The demo vcentral, vremote, and vbac images in `jkempf42/public-repo` have been build 
 with an ubuntu 20.04 image loaded with
 debugging tools, especially for network debugging (traceroute, ping, dig, etc.) and so may be too big for
 production use. Once `microservice-volttron` is made public, you will probably want to modify the 
@@ -55,5 +57,19 @@ you will need to replace images with your own, you will need to replace
 the name of the container image in the manifests under the 
 `spec.template.containers.image` key, which is currently set to
 `jkempf42/public-repo:<image type tag>`, with your own repository and image tag in the yaml manifests.
+
+Finally, kube-volttron was developed with ease of deployability in mind
+and not with security. If you decide to deploy kube-volttron for real, you
+should go through the directions in this repo with a fine toothed comb,
+ensuring file and directory permissions are properly set. Some effort 
+was made to set file permissions but it was not consistent. Also, you
+should make use of the powerful Kubernetes security tools like `Secret`
+objects, RBAC control, and use separate namespaces for different tenants to 
+ensure that only entites that are allowed can their services in your cluster.
+Finally, the demo images have self-signed certs built in, and they are not
+appropriate for production use. So let me repeat: _kube-volttron is for
+demo purposes only, it is not for production deployment!_ 
+You will need to do some additional work before you can deploy 
+it in production. 
 
 

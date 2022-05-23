@@ -15,8 +15,7 @@ to be packaged and preconfigured into redistributable binary container images, w
 the final configuration being done in the deployment context. The result is a re-architecting of
 Volttron from a legacy, monolithic, deploy and run on one machine application to a modern 
 application with a modular, microservices 
-architecture. Both `kube-volttron` and `microservice-volttron` have been built on ubuntu 20.04
-and they are not guaranteed to and probably won't work on any other operating system. 
+architecture. 
 
 The `kube-volttron` cluster is built from a central node running in a cloud or on prem VM or server 
 connected to 
@@ -44,7 +43,24 @@ and are not discussed in the deployment instructions. Adding Postgres
 is a future enhancement.
 
 - Once your Volttron Central is deployed, move to your gateway node and follow the directions in the 
-`README.md` file to deploy the gateway node. 
+`README.md` file to deploy the gateway node.
+
+## Versions
+
+The following versions of software packages were used to build kube-volttron. Your mileage may vary if you
+choose to use different versions:
+
+- operating system: Ubuntu 20.04 
+- wireguard: wireguard-tools 1.0.20200513
+- kubeadm: 1.24.0
+- kubectl: 1.24.0 
+- kubelet: 1.24.0
+- kubernetes-cni:  0.8.7
+- cri-tools: 1.23.0
+- containerd: 1.5.9
+- flannel: 0.17.0
+- multus: 3.8
+
 
 ## Notes on the suitability of kube-volttron for production deployment.
 

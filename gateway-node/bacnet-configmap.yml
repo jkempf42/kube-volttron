@@ -11,7 +11,7 @@ data:
                           "max_per_request": 24
                           },
         "driver_type": "bacnet",
-        "registry_config":"config://bacnet.csv",
+        "registry_config":"config://bacnet/sim-AHU.csv",
         "interval": 5,
         "timezone": "US/Pacific"
     }

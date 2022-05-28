@@ -65,13 +65,7 @@ operating system and/or VM manager you are using.
 Kube-volttron was developed on 
 Ubuntu 20.04 using the VirtualBox VMM. 
 
-Unfortunately, Wireguard won't 
-install properly on a multi-interface
-VM, so you will first need to create the gateway node VM with one bridged
-interface, then install Wireguard, then add a second interface.
-The directions for adding an 
-additional interface to a VirtualBox VM are explained in detail after the
-section on Wireguard installation and configuration. The next sections 
+The next sections 
 describe how to create a VM on VirtualBox. If you are using a VM for
 both your central node and gateway node, you should follow the directions
 in these sections twice.
@@ -92,6 +86,20 @@ the *Settings* tab is up, click on *Network* in the left side menu bar. You shou
 ![Network Settings tab](image/vb-net-settings.png)
 
 Set your first interface to *Bridged Adaptor*.
+
+#### Configure the second interface on the gateway node
+
+Click on the *Adaptor 2* tab then
+click the check box marked *Enable Network Adaptor*. Select the 
+*Bridged Adaptor* for the network type. Click on the *Advanced* arrow and make sure the *Cable Connected* 
+checkbox is checked. 
+
+#### Save the configuration
+
+Save the configuration by clicking on the *OK* button on the bottom right.
+
+Start the gateway node VM  by bringing up the VM menu again and clicking
+on *Start*->*Normal Start* to start the gateway node VM.
 
 ### Preinstallation host config, node uniqueness check, and routing configuration
 
@@ -353,26 +361,6 @@ then on the gateway node:
 
 	ping 10.8.0.1
 
-#### Configure the second interface on the gateway node
-
-Now we need to add a second interface on the gateway node. First, power off
-the VM so that you can add the interface.
-
-In the VirtualBox left side VM menu, right click on the menu item 
-for the gateway node to bring up the menu, then click on the 
-menu item for the gateway node, then on *Settings*->*Network*. When
-the Network display appears, click on the *Adaptor 2* tab then
-click the check box marked *Enable Network Adaptor*. Select the 
-*Bridged Adaptor* for the network type. Click on the *Advanced* arrow and make sure the *Cable Connected* 
-checkbox is checked. 
-
-#### Save the configuration
-
-Save the configuration by clicking on the *OK* button on the bottom right.
-
-Start the gateway node VM again by bringing up the VM menu again and clicking
-on *Start*->*Normal Start* to start the gateway node VM.
-
 #### Configuring additional gateway nodes.
 
 To configure additional gateway nodes, install Wireguard on the node and 
@@ -439,20 +427,20 @@ If you see something like:
      release o=kubernetes-xenial,a=kubernetes-xenial,n=kubernetes-xenial,l=kubernetes-xenial,c=main,b=amd64
      origin apt.kubernetes.io
 
-Skip forward to the next section. If not, then do the following:
+Skip forward to the next section. If not, then do the following.
 
-- Update the apt package index and install packages needed to use the Kubernetes apt repository:
+Update the apt package index and install packages needed to use the Kubernetes apt repository:
 
-	`sudo apt-get update
-	sudo apt-get install -y apt-transport-https ca-certificates curl`
+	sudo apt-get update
+	sudo apt-get install -y apt-transport-https ca-certificates curl
 
-- Download the Google Cloud public signing key:
+Download the Google Cloud public signing key:
 
-	`sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg`
+	sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
 
-- Add the Kubernetes apt repository:
+Add the Kubernetes apt repository:
 
-	`echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list`
+	echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 	
 #### Installing the Kubernetes system utilities
 

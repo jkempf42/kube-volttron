@@ -5,10 +5,15 @@ or a EV charger,
 connected to the site's local area network with routing to the Internet.
 A gateway pod with a Volttron deployment acts as an intermediary between the
 IoT devices running on site and the Volttron Central pod running on the
-control node, either at a central on-prem site or in a cloud VM. 
+control node. 
 The gateway pod monitors IoT devices 
-on the site, reports the data back to the Volttron Central node running in the
-cloud, and conveys commands from Volttron Central to the devices.
+on the site, reports the data back to the Volttron Central historian
+running in the
+central node, and conveys commands from Volttron Central to the devices. In the
+kube-volttron prototype, the gateway node runs in a VirtualBox VM,
+monitors a simulated service running directly the host, and reports back
+to the Volttron Central historian also running in a VirtualBox VM on the
+same host. 
 
 You have a choice of two different preconfigured containerized Volttron 
 microservices for two IoT device simulators to try out:
@@ -338,7 +343,7 @@ to watch the pods until the `vbac` pod is running. Note that the pod will have a
 
 ### Check whether the deployment was successful from the Volttron Central web app
 
-Using the Vottron Central web app deployed either locally earlier or in the cloud, check whether the deployment was
+Using the Vottron Central web app, check whether the deployment was
 successful by logging in and navigating to the *Platforms* page as described above. Click on *`vbac`*->*Charts*->*Add Chart*.
 In the *Add Chart* dialog, click on the *Topics* pulldown and you should see a pulldown list as in the following display:
 

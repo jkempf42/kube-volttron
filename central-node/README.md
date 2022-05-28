@@ -44,7 +44,7 @@ is to assign an external address in the pod spec of the `Deployment`.
 
 ### Vcentral storage manifest
 
-The `vcentral` storage manifest defines three Kubernetes objects for mounting a 
+The `vcentral` storage manifest in the file `vcentral-storage.yml` defines three Kubernetes objects for mounting a 
 local directory into the `vcentral` pod:
 
 - `StorageClass`: This defines a type for a Kubernetes persistent volume. A `local` storage class is

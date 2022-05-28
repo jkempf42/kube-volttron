@@ -2,7 +2,7 @@
 
 Kube-volttron uses [Wireguard VPN](https://www.wireguard.com/) 
 for point to point encrypted communication
-between the cloud VM and the on-site gateway nodes 
+between the central node VM and the gateway node
 and [`kubeadm`](https://kubernetes.io/docs/reference/setup-tools/kubeadm/) 
 to configure and administer the cluster. While there
 are simpler Kubernetes distros to install, they generally are 
@@ -11,15 +11,7 @@ maintaining multi-interface pods difficult. These directions walk you
 through:
 
 - Installing and configuring a Wireguard VPN running through a `wg0` 
-interface on a central node, nominally running in a 
-cloud VM but also in an onsite VM, 
-and a gateway node running in a VirtualBox VM located on
-the site local area network. The node configurations generalize so that 
-the local gateway node could be any device that can run Ubuntu or another Linux
-variant, and the central node could be a VM running in an on prem 
-data center, a VM on a laptop, or even a dedicated server. Both nodes
-need internet connectivity, and the gateway node needs connectivity to
-the local site network to access IoT devices.
+interface on a central node and a gateway node VM. 
 
 - Installing and configuring the basic Kubernetes services
 on both nodes and `kubeadm` on both nodes, and the Flannel and Multus CNI 
@@ -33,6 +25,17 @@ local network through Flannel.[^1]
 - Creating a cluster with `kubeadm` in which the gateway node is 
 connected to the central node and listed as a worker.
 
+The instructions were developed on a configuration consisting of
+VirtualBox on an Ubuntu 20.04 host, with two Ubuntu 20.04 VMs on the same host, one for the central node and one for the 
+gateway node. It will also probably work for two bare metal hosts or two VMs
+running in the local network. 
+If you try a cloud VM, since
+the Volttron Central dashboard is exposed in by using the `externalIPs` 
+key in the `vcentral-service.yml`, it will run afoul of the cloud
+virtual networking. You will need to set up a load balancer with the 
+cloud provider and expose the `vcentral` service as a `LoadBalancer` 
+service.
+
 [^1] Some CNI plugins that do not use overlays ("flat" drivers) 
 may allow broadcast and direct access to the host network, 
 this is an area for future work.
@@ -41,10 +44,9 @@ this is an area for future work.
 
 ### Installing and configuring the central node.
 
-The first step is to bring up a VM running Ubuntu 20.04 on your favorite cloud
-provider to act as a server or a VirtualBox or other VM locally. 
+The first step is to bring up a VM running Ubuntu 20.04 on a VirtualBox VM.
 A central node VM
-with 4 VCPUs and 8 GB RAM is recommended. After installing the VM, you should configure the network to open port 51820 for incoming traffic if necessary, 
+with 2 VCPUs and 4 GB RAM is recommended. After installing the VM, you should configure the network to open port 51820 for incoming traffic if necessary, 
 since this
 is the port Wireguard uses, in addition to port 22 for `ssh` access
 Also, write down the public IP address assigned to the VM and reserve 
@@ -161,13 +163,6 @@ a VPN server, and includes instructions for configuring with IPv6 which
 are nice if you have IPv6 available but only increase the complexity. Below,
 I've summarized the instructions for installing and configurating Wireguard
 specifically for the kube-volttron use case using IPv4.
-
-Note that these instructions work best if you have a VM or bare metal device running Ubuntu 20.4 as your gateway node
-from which you can work back into the cloud using `ssh`
-if you are using a cloud VM for your central node. You can 
-open one window and `ssh` into your central node and have the other 
-on the gateway machine. Both sides need to have Wireguard 
-installed and configured.
 
 #### Installing Wireguard and related packages
 
@@ -582,14 +577,11 @@ If you don't have the value of `--discovery-token-ca-cert-hash` you can find by 
 	
 Finally, to use `kubectl` on the gateway node to deploy pods, you need
 to copy the config file over from the control node to the gateway node. 
-You should use `scp` on the gateway node if your are running on a cloud
-VM or through a shared folder if the control node is in a local VirtualBox
+You should copy the file to your VirtualBox shared folder on the central
+node and from there to the gateway node.
 VM on the same host as the gateway node: 
-
-	scp $USER@<control-plane-host>:/home/$USER/.kube/config .
-
-Also copy the file into `/etc/kubernetes/admin.conf` as root so
-other users have access to it.
+Also copy the file into `/etc/kubernetes/admin.conf` as root on the 
+gateway node so other users have access to it.
 	
 Check if everything is running OK by running `kubectl` on the gateway:
 

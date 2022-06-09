@@ -341,6 +341,20 @@ Check the status of the tunnel:
 	peer: j6wKBbuAFxwELVBgW+brAMDyWZ3JUseVcP+i+3IN2W8=
 		allowed ips: 10.8.0.0/24
 		
+In addition, edit the `/etc/wireguard/wg0.conf` file and add a section 
+for the gateway node at the end of the file with at least one blank line
+after the top section:
+
+	[Peer]
+	PublicKey = <insert gateway node public key here>
+	AllowedIPs = 10.8.0.0/24
+	Endpoint = <insert public IP address of your gateway node here>:51820
+	PersistentKeepalive = 21
+
+This will ensure the connection comes up if the central node VM happens to 
+go down without saving the interface configuration.
+
+
 #### Connecting the gateway node to the tunnel
 
 Follow the same steps as in the section on installing a system service on 

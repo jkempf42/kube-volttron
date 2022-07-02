@@ -18,8 +18,10 @@ spec:
       hostname: vremote
       containers:
         - name: vremote
-          image: jkempf42/public-repo:v2-dev.vremote-local
+          image: jkempf42/public-repo:v2-dev.vremote
           imagePullPolicy: Always
+          command: ["/bin/bash"]
+          args: ["-c", "while true; do sleep 600; done"]
       nodeSelector:
         kubernetes.io/hostname: gateway-node
 

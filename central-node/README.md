@@ -34,14 +34,6 @@ VIP bus port at port number 22916 so the gateway pods can connect to
 the VIP bus (individual pods in a Kubernetes cluster have no access to a common Unix
 socket which is how agents typically communicate on the VIP bus). 
 
-- `vcentral-ingress.yml`: This defines an `Ingress` service which is an alternate (and one of the preferred) ways to access a service from outside the cluster. `Ingress` services must use HTTP on port 80 or HTTPS on port 443 externally,
-and since Volttron Central uses 8443 `Ingress` won't work. There are other
-ways to export services, but they have other restrictions on port
-numbering or require additional services like a load balancer. Since for
-now, only one replica of the `vcentral` service runs and it must run on
-port 8443, the simplest way to externally access the Volttron web application
-is to assign an external address in the pod spec of the `Deployment`.
-
 ### Vcentral storage manifest
 
 The `vcentral` storage manifest in the file `vcentral-storage.yml` defines three Kubernetes objects for mounting a 

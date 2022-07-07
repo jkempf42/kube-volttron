@@ -55,7 +55,7 @@ some advanced features of the CNI to enable multi-interface pods.
 The [Multus multi-interface CNI driver](https://github.com/k8snetworkplumbingwg/multus-cni/blob/master/docs/configuration.md)
 that was installed as part of the cluster configuration allows pods to be configured
 with an additional interface on the site network. The figure below shows the 
-BACnet Kubernetes cluster network architecture.
+BACnet Kubernetes cluster network architecture.   
 
 ![BACnet network architecture](image/bn-gateway-node-arch-flannel.png)
 

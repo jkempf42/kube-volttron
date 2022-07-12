@@ -404,6 +404,9 @@ First, turn off swap:
 Next, enable the bridge net filter driver `br_netfilter`:
 
 	sudo modprobe br_netfilter
+	
+Finally, edit the file `/etc/modules` and add a line with `br_netfilter` 
+on it so the module will be reloaded when the VM reboots.
 
 ### Installing the `containerd` container runtime and configuring a system service
 

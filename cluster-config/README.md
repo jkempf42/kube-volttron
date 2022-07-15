@@ -264,7 +264,7 @@ Next, turn off swap on the VMs:
 	sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
 	
 Next, we need to enable routing on both nodes by `sudo` editing
-`/etc/sysctl.conf` as root and uncommenting `net.ipv4.ip_forward=1` and 
+`/etc/sysctl.conf` and deleting the `#` character at the beginning of the lines with `net.ipv4.ip_forward=1` and 
 `net.ipv6.conf.all.forwarding=1` to enable routing on the host after reboot, if they aren't already.
 
 Then use the command:

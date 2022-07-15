@@ -244,6 +244,8 @@ may need to change it.
 You should not have to reboot the node to have the hostname change take
 effect.
 
+You should also install your favorite editor if it isn't there, and packages containing network debugging tools including `net-tools` and `inetutils-traceroute` (for `ifconfig` and `traceroute`) just in case you need them.
+
 Kubenetes uses the hardware MAC addresses and machine id to identify
 pods. Use the following to ensure that the two nodes have unique 
 MAC addresses and machine ids:
@@ -261,7 +263,7 @@ Next, turn off swap on the VMs:
 	sudo swapoff -a
 	sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
 	
-Next, we need to enable routing on both nodes by editing
+Next, we need to enable routing on both nodes by `sudo` editing
 `/etc/sysctl.conf` as root and uncommenting `net.ipv4.ip_forward=1` and 
 `net.ipv6.conf.all.forwarding=1` to enable routing on the host after reboot, if they aren't already.
 
@@ -316,8 +318,6 @@ following instructions are based on installing `resolvconf`:
 
 	sudo apt install resolvconf
 	
-You should also install your favorite editor if it isn't there, and packages containing network debugging tools including `net-tools` and `inetutils-traceroute` (for `ifconfig` and `traceroute`) just in case you need them.
-
 ### Configuring the Wireguard VPN
 
 Wireguard creates a virtual interface on a node 

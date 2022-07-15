@@ -24,13 +24,13 @@ agent which handles the Web UI and an SQL-lite historian. The gateway node monit
 devices using an IoT protocol ([BACnet](http://www.bacnet.org/) in the demo), an Actuator agent to handle commands
 to the devices, and a forwarding historian to send data to the central node.
 The repo was tested with two different execution environment options: both the central and gateway nodes running in VirtualBox VMs locally, 
-and the central node running in a Azure VM and the gateway node running in a VirtualBox VM locally.
+and the central node running in a Azure VM while the gateway node is running in a VirtualBox VM locally.
 Instructions are provided in the `cluster-config/README.md` file for setting up the cluster base in these two
 execution environments, but most instructions should generalize to other environments.
 
 Follow these steps (performed in the order specified here) to get `kube-volttron` up and running:
 
-- Change to the `cluster-config directory and follow the instructions in the `cluster-config/README.md` file 
+- Change to the `cluster-config` directory and follow the instructions in the `cluster-config/README.md` file 
 to create the central and gateway nodes and build a Kubernetes cluster.
 
 - Change to the `central-node` directory and follow the instructions in the `README.md` file to deploy 

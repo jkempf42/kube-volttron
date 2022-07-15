@@ -143,7 +143,11 @@ below assume you are working with the Azure portal. Name the VM `central-node`
 to make the following instructions easier.
 
 The cloud provider's firewall should
-have a port for SSH already open for the VM, but you will need to 
+have port 22 open for SSH on the VM. If the source is *Any*, meaning any IP address, you should set the 
+source to the `gateway-node` VM IP address since you will likely want to work from a shell window there.
+You can find the address by browsing to`whatsmyip.org` from a browser running on `gateway-node`.
+
+You will need to 
 open ports for Wireguard
 and the Nginx reverse proxy. Bring up the Azure dashboard
 display for your VM by clicking on *All resources*->*central-node*.
@@ -152,7 +156,7 @@ In the left side menu, click on *Networking*. Click on the blue
 with the following for the Wireguard port:
 
 - *Source*: *IP Address*.
-- *Source IP addresses/CIDR ranges*: IP address of the `gateway-node` host. Use `whatsmyip.org` from your browser running on `gateway-node` to find it. 
+- *Source IP addresses/CIDR ranges*: IP address of the `gateway-node` host.  
 - *Source port ranges*: Leave at default of *** (any).
 - *Destination*: Leave at default of *Any*.
 - *Service*: Leave at *Custom*.

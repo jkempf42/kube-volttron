@@ -171,7 +171,7 @@ After you've configured a port for Wireguard, configure one for Nginx with
 the following:
 
 - *Source*: *IP Address*.
-- *Source IP addresses/CIDR ranges*: IP address of the `gateway-node` host. Use `whatsmyip.org` from your browser running on `gateway-node` to find it.
+- *Source IP addresses/CIDR ranges*: IP address of the `gateway-node` host.
 - *Source port ranges*: Leave at default of *** (any).
 - *Destination*: leave at default of *Any*.
 - *Service*: *HTTP*.

@@ -23,15 +23,15 @@ a node at a remote site, called the gateway node, through a VPN. The central nod
 agent which handles the Web UI and an SQL-lite historian. The gateway node monitors a collection of
 devices using an IoT protocol ([BACnet](http://www.bacnet.org/) in the demo), an Actuator agent to handle commands
 to the devices, and a forwarding historian to send data to the central node.
-The repo was tested with VirtualBox for both the control and gateway nodes
-and and instructions are provided in the `cluster-config/README.md` file for setting up the cluster base on that 
-execution platform, but most instructions should generalize to other platforms.
+The repo was tested with two different execution environment options: both the central and gateway nodes running in VirtualBox VMs locally, 
+and the central node running in a Azure VM and the gateway node running in a VirtualBox VM locally.
+Instructions are provided in the `cluster-config/README.md` file for setting up the cluster base in these two
+execution environments, but most instructions should generalize to other environments.
 
 Follow these steps (performed in the order specified here) to get `kube-volttron` up and running:
 
-- Read the `cluster-config/README.md` file for instructions about how to create the central and gateway nodes,
-then create the nodes and clone this git repo into the two nodes. On each node, change to
-the `cluster-config` directory and follow the instructions in the `README.md` file to build your cluster.
+- Change to the `cluster-config directory and follow the instructions in the `cluster-config/README.md` file 
+to create the central and gateway nodes and build a Kubernetes cluster.
 
 - Change to the `central-node` directory and follow the instructions in the `README.md` file to deploy 
 Volttron Central with SQL-lite historian on your
@@ -42,7 +42,7 @@ the default `vcentral` container image does not have Postgres built in, they can
 and are not discussed in the deployment instructions. Adding Postgres
 is a future enhancement.
 
-- Once your Volttron Central is deployed, move to your gateway node and follow the directions in the 
+- Once your Volttron Central is deployed, change to the `gateway-node` directory and follow the directions in the 
 `README.md` file to deploy the gateway node.
 
 ## Versions
@@ -52,9 +52,9 @@ choose to use different versions:
 
 - operating system: Ubuntu 20.04 
 - wireguard: wireguard-tools 1.0.20200513
-- kubeadm: 1.24.0
-- kubectl: 1.24.0 
-- kubelet: 1.24.0
+- kubeadm: 1.24.2
+- kubectl: 1.24.2 
+- kubelet: 1.24.2
 - kubernetes-cni:  0.8.7
 - cri-tools: 1.23.0
 - containerd: 1.5.9
@@ -62,11 +62,11 @@ choose to use different versions:
 - multus: 3.8
 
 The microservice-volttron container images were built from a deep fork of
-the volttron-docker version 3.2 repo.
+the `volttron-docker` version 3.2 repo.
 
 ## Notes on the suitability of kube-volttron for production deployment.
 
-The yaml manifests in the `central-node` and `gateway-node` subdirectories
+The yaml manifests in the `central-node` and `gateway-node` directories  
 pull demo prebuilt images from the Docker hub `jkempf42/public-repo`. 
 If you decide to develop your own Volttron microservice containers, 
 you will need to replace
@@ -76,15 +76,16 @@ the name of the container image in the manifests under the
 
 The demo `vcentral`, `vremote`, and `vbac` images in `jkempf42/public-repo` have been build 
 with an ubuntu 20.04 image loaded with
-debugging tools, especially for network debugging (traceroute, ping, dig, etc.). 
+debugging tools, especially for network debugging (`traceroute`, `ping`, `dig`, etc.). 
 Once `microservice-volttron` is made public, you should modify the 
 Dockerfiles at `microservice-volttron` to produce smaller 
-images, and maybe use a smaller base OS image like alpine, if you plan to use `kube-volttron` in production. 
+images, and maybe use a smaller base OS image like `alpine`, if you plan to use `kube-volttron` in production. 
 
-Finally, kube-volttron was developed with ease of deployability in mind
-and not with security. If you decide to deploy kube-volttron for real, you
+Finally, `kube-volttron` was developed with ease of demoability in mind
+and not with security. If there is enough interest from the community, I'll continue working on it
+and add security features over time. But if you decide to deploy `kube-volttron` for real, you
 should go through the directions in this repo with a fine toothed comb,
-ensuring file and directory permissions are properly set. Some effort 
+ensuring file and directory permissions are properly set and Internet connections are properly secured. Some effort 
 was made to set file permissions for security but it was not consistent. Also, you
 should make use of the powerful Kubernetes security tools like `Secret`
 objects, RBAC control, and using separate namespaces for different tenants to 
@@ -92,7 +93,7 @@ ensure that only entites that are allowed can access their services in the clust
 Finally, the demo images have self-signed certs built in, and they are not
 appropriate for production use. So let me repeat: _kube-volttron is for
 demo purposes only, it is not for production deployment!_ 
-It was built as an experiment only. 
+It was built as an experiment and security is set to make demoing easy. 
 You will need to do some additional work before you can deploy 
 it in production. 
 

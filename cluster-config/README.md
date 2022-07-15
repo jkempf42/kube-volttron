@@ -534,7 +534,7 @@ instructions [here](https://kubernetes.io/docs/setup/production-environment/tool
 
 ### Installing the Kubernetes packages
 
-Perform the following steps on both nodes.
+Clone this github repo (`kempf42/kube-volttron`) and perform the following steps on both nodes.
 
 #### Installing the `containerd` container runtime package and configuring a system service
 

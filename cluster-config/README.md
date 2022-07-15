@@ -145,7 +145,7 @@ to make the following instructions easier.
 The cloud provider's firewall should
 have port 22 open for SSH on the VM. If the source is *Any*, meaning any IP address, you should set the 
 source to the `gateway-node` VM IP address since you will likely want to work from a shell window there.
-You can find the address by browsing to`whatsmyip.org` from a browser running on `gateway-node`.
+You can find the address by browsing to [`whatsmyip.org`](http://www.whatsmyip.org) from a browser running on `gateway-node`.
 
 You will need to 
 open ports for Wireguard

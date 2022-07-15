@@ -47,7 +47,7 @@ is a future enhancement.
 
 ## Versions
 
-The following versions of software packages were used to build kube-volttron. Your mileage may vary if you
+The following versions of software packages were used to build `kube-volttron`. Your mileage may vary if you
 choose to use different versions:
 
 - operating system: Ubuntu 20.04 
@@ -91,7 +91,7 @@ should make use of the powerful Kubernetes security tools like `Secret`
 objects, RBAC control, and using separate namespaces for different tenants to 
 ensure that only entites that are allowed can access their services in the cluster.
 Finally, the demo images have self-signed certs built in, and they are not
-appropriate for production use. So let me repeat: _kube-volttron is for
+appropriate for production use. So let me repeat: _`kube-volttron` is for
 demo purposes only, it is not for production deployment!_ 
 It was built as an experiment and security is set to make demoing easy. 
 You will need to do some additional work before you can deploy 

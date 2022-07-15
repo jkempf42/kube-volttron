@@ -11,20 +11,20 @@ your central node VM.
 
 The `vcentral` services manifests are contained in the following three yaml files: 
 
-- `vcentral-deploy.yml`: This sets up a Kubernetes `Deployment` for a vcentral Volttron Central microservice with an 
+- `vcentral-deploy.yml`: This sets up a Kubernetes Deployment for a vcentral Volttron Central microservice with an 
 SQL Lite historian mounted to the VM's file system so the data survives the
-container going down. The deployment has only one replica pod. The Kubernetes `Deployment` restarts the pod if it crashes. 
+container going down. The deployment has only one replica pod. The Kubernetes Deployment restarts the pod if it crashes. 
 You need to edit the file and replace the value of the 
 `kubernetes.io/hostname` key which is`central-node` 
 with the hostname of your central node.
 
-- `vcentral-service.yml`: This defines a `ClusterIP` type service for vcentral, but
+- `vcentral-service.yml`: This defines a ClusterIP type service for vcentral, but
 with an external IP address so that you can access the Volttron Central 
 Web UI from a 
 browser running on the host for testing. You can find out the addresses on your host
 interface with `ifconfig`. You should replace the IP address in
 the manifest that is the array value of the key `externalIPs`, with an IP address of the central
-node machine on your local subnet. Don't use the loopback address (`127.0.0.1`) as the `Deployment`
+node machine on your local subnet. Don't use the loopback address (`127.0.0.1`) as the Deployment
 will get an error when it tries to deploy a pod. Also, don't use the address on `wg0`, `flannel.1`
 or `cni0` nor any of the `veth` interfaces since they are used by Kubenetes.
 The Volttron Central Web UI will run on the standard Volttron port,
@@ -34,22 +34,25 @@ VIP bus port at port number 22916 so the gateway pods can connect to
 the VIP bus (individual pods in a Kubernetes cluster have no access to a common Unix
 socket which is how agents typically communicate on the VIP bus). 
 
+- `vcentral-cloud-service.yml`: This defines a NodePort service for 
+`vcentral` and omits the `externalIPs` key since this service will be
+accessed through the Nginx reverse proxy.
+
 ### Vcentral storage manifest
 
-The `vcentral` storage manifest in the file `vcentral-storage.yml` defines three Kubernetes objects for mounting a 
-local directory into the `vcentral` pod:
+The `vcentral` storage manifest in the file `vcentral-storage.yml` defines three Kubernetes objects for mounting a local directory into the `vcentral` pod:
 
-- `StorageClass`: This defines a type for a Kubernetes persistent volume. A `local` storage class is
+- StorageClass: This defines a type for a Kubernetes persistent volume. A `local` storage class is
 used because we want to mount a local directory, and the class name is `local-storage`
 
-- `PersistentVolume`: This type describes the path to the actual directory on the local node we 
+- PersistentVolume: This type describes the path to the actual directory on the local node we 
 want to mount. It also needs to specify what node the directory is on in the `nodeAffinity` section. 
 Change the node name in the `matchExpressions:` `values:` section from
 `central-node` to the hostname of your central node. 
 Note the `spec.persistentVolumeReclaimPolicy` is set to `Retain`
-indicating that the volume should be retained if the pod goes down, and the `storageClassName` indicates the name of the `StorageClass` type of the persistent volume, in this case `local-storage`.
+indicating that the volume should be retained if the pod goes down, and the `storageClassName` indicates the name of the StorageClass type of the persistent volume, in this case `local-storage`.
 
-- `PersistentVolumeClaim`: This type allows a pod to exercise a claim on the `PersistentVolume`. 
+- PersistentVolumeClaim: This type allows a pod to exercise a claim on the PersistentVolume. 
 It also indicates 
 the `storageClassName`, again, `local-storage`. The `accessModes` 
 array is set to `ReadWriteOnce` indicating that
@@ -66,7 +69,8 @@ If it isn't there, use the following command to add it:
 
 	kubectl label nodes <central node hostname> kubernetes.io/hostname=<central node hostname>
 	
-We also need to create a local directory for the persistent volume that will hold the historian database. 
+We also need to create a local directory for the persistent volume 
+on `central-node` that will hold the Historian database. 
 
 	sudo mkdir -p /data/volttron/db
 	
@@ -110,6 +114,9 @@ and you can check whether they have been deployed with:
 	kubernetes   ClusterIP   10.96.0.1       <none>          443/TCP              19h
 	vcentral     ClusterIP   10.105.192.93   192.168.0.129   8443/TCP,22916/TCP   5s
 	
+If you are deploying to a cloud VM, the `vcentral` service type will show
+up as `NodePort` and there will be no external IP showing.
+
 #### Deploying the `vcentral` deployment
 
 Finally, we can create the `vcentral` deployment:
@@ -128,15 +135,88 @@ which will follow progress on creating the pod:
 
 #### Testing the Volttron Central microservice web site
 
-You can test whether the Volttron Central microservice is running through a 
-browser running on the host to browse to the Web page. Type 
-`https://<host IP address>:8443/index.html` into the address bar. Your 
+Depending whether your `central-node` is running on a cloud or on a local
+VM, there are two ways to check the Volttron Central web site.
+
+##### `central-node` is running in a local VM
+
+Type 
+`https://<host IP address>:8443/index.html` into the address bar of
+your browser running on the host where your central node VM is running. Your 
 browser will bring up a page indicating that the certificate may be 
 questionable, this is normal behavior because `vcentral` uses a self-signed
 certificate. Click on the *Advanced*->*Continue* button or however your
-browser designates it.
+browser designates it. This will bring up the Volttron Central admin 
+splash page.
 
-This will bring up the Volttron Central admin splash page:
+##### `central-node` is running in a cloud VM
+
+On the `central-node` node, find out the NodePort address and port on which the `vcentral` service is
+deployed:
+
+	kubectl get endpoints | grep vcentral
+	vcentral    10.244.0.42:8443            10m
+	
+The endpoint address is where the Nginx proxy will forward request to.
+
+Test the enpoint address using `curl` on the `central-node` node cloud VM:
+
+	curl -k https://<your NodePort IP address>:8443/index.html
+	
+You should get back some HTML code for the Volttron server page to
+set up authentication. You probably can't use a browser at this point because 
+you are running `ssh` remotely and have CLI access only.
+
+Next, `sudo` edit `/etc/nginx/nginx.conf` and comment out the line for 
+sites enabled:
+
+	\# include /etc/nginx/sites-enabled/*;
+
+
+This ensures that the only pathnames will come from `conf.d`, which is
+where we will put the config file for `kube-volttron`.
+
+Edit the file `kube.conf` in this directory, replacing 
+`<your NodePort IP address>` with the `vcentral` NodePort 
+endpoint IP address 
+found from using `kubectl` above. Copy the file into the Nginx 
+configuration directory:
+
+
+	sudo cp kube.conf /etc/nginx/conf.d
+
+Note: Kubernetes resets the endpoint address if you stop and restart the VM
+or if you redeploy the service. Make sure to check the endpoint address when 
+you stop and restart the VM and change the address in the config file if  
+it has changed.
+
+Reload Nginx with:
+
+	sudo nginx -s reload
+	
+It should not print anything out if your edits were correct.
+
+Finally, you can check if the Volttron Central website is accessable 
+from the Internet by browsing to it using the VM's DNS name..
+On Azure, the DNS name for your VM is on the VM *Overview* page. 
+Copy it and use 
+`curl` to check on the website:
+
+	curl -k http://<DNS name for VM>/index.html
+	
+As above, it should print out the Adminstrative web site configuration splash
+page HTML.You can then use your browser to access the 
+Volttron Central website by 
+typing `http://<DNS name for VM>/index.html` into the browser address
+bar.
+
+Note that when accessing the Website over the Internet, you need to use 
+`http` and not `https` because the port opened on the firewall was port 80.
+
+
+#### Configuring passwords in the Volttron Central admin page and viewing the dashboard
+
+The Volttron Central admin splash page looks like:
 
 ![Volttron Central splash page](image/vc-admin-splash.png)
 
@@ -148,7 +228,10 @@ config page, where you can set the admin username and password:
 After filling in the admin username and password, click *Set Master Password* and you should see the admin login page come up.
 
 You can view the Volttron Central dashboard web app by browsing to the URL 
-`https://<host machine IP address>:8443/vc/index.html`. This will bring up the Volttron Central login page:
+`https://<web address>/vc/index.html`, where `<web address>` is either
+of the two addresses in the previous two sections depending on which
+central node deployment you used. This will bring up the Volttron 
+Central dashboard login page:
 
 ![Volttron Central login page](image/vc-login.png)
 
@@ -166,8 +249,10 @@ The `vcentral` log can be viewed with:
 	kubectl logs <vcentral pod name>
 	
 Note that an error message may be printed out from SSL indicating a problem for the certificate, that
-is because it is a self-signed cert and should not affect validation of web requests to the
-Volttron Central server.
+is because it is a self-signed cert and should not affect validation of web requests to the Volttron Central server. You may also get an SSL error involving
+the `flannel.1` interface if you run the central node in a cloud server,
+but that should not affect your ability to get to the Volttron Central 
+website from the Internet.
 
 You can exec a shell in the `vcentral` pod using the following command:
 
@@ -182,8 +267,8 @@ and indented at the same level:
           command: ["/bin/bash"]
           args: [ "-c", "while true; do sleep 600; done" ]
 
-You can then exec into the pod and start Volttron by hand. Be sure to `su volttron` before starting
-it, otherwise some Python packages may not be found.
+You can then exec into the pod and start Volttron by hand. Be sure to `su volttron` before starting it, otherwise some Python packages may not be found.
+This can be helpful if you need to debug some problem with Volttron.
 
 
 

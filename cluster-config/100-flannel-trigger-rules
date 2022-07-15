@@ -1,0 +1,3 @@
+#This sets sets triggers for kubeflannel rules to remove checksum addition
+#on the flannel.1 interface. 
+SUBSYSTEM=="net", ACTION=="add", KERNEL=="flannel.*", TAG+="systemd", ENV{SYSTEMD_WANTS}="flannel-created@%k.service"

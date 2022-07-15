@@ -1,6 +1,6 @@
 # Deploying a Kubernetes cluster for Volttron microservices
 
-Kube-volttron uses [Wireguard VPN](https://www.wireguard.com/) 
+`kube-volttron` uses [Wireguard VPN](https://www.wireguard.com/) 
 for point to point encrypted communication
 between the central node VM and the gateway node
 and [`kubeadm`](https://kubernetes.io/docs/reference/setup-tools/kubeadm/) 
@@ -10,76 +10,64 @@ opinionated about networking in ways that make setting up and
 maintaining multi-interface pods difficult. These directions walk you 
 through:
 
-- Installing and configuring a Wireguard VPN running through a `wg0` 
-interface on a central node and a gateway node VM. 
+- Creating and configuring two VMs to run the central node and the
+gateway node. Two options are described:
+	1. Create both VMs using VirtualBox on a local server or laptop,
+	2. Create the central node VM in a cloud VM and the gateway VM 
+	   in a VirtualBox VM on a local server or laptop. 
 
-- Installing and configuring the basic Kubernetes services
-on both nodes and `kubeadm` on both nodes, and the Flannel and Multus CNI 
+- Installing and configuring a Wireguard VPN running through a `wg0` 
+interface between the central node and gateway node VMs. 
+
+- Installing and configuring the basic Kubernetes
+and `kubeadm` packages on both nodes. 
+
+- Creating a cluster with `kubeadm` in which the central node is 
+installed as a control
+node, although it is configured to run workloads too, and the gateway
+node is configured as a worker node. 
+
+- Installing and
+configuring the Flannel and Multus CNI (Container Network Interface)
 plugins on the central node. Flannel 
 is used for the intra-cluster, pod-to-pod network, and Multus is used to
 provide a second interface for pods running in the gateway nodes that 
 have special networking needs, like, for example, using broadcast to discover
 devices in the site's local area network. Pods can't access the site 
-local network through Flannel.[^1]
+local network directly through Flannel.
 
-- Creating a cluster with `kubeadm` in which the gateway node is 
-connected to the central node and listed as a worker.
+The instructions were developed on the Ubuntu 20.04 operating system, so
+your mileage may vary if you use a different one.
 
-The instructions were developed on a configuration consisting of
-VirtualBox on an Ubuntu 20.04 host, with two Ubuntu 20.04 VMs on the same host, one for the central node and one for the 
-gateway node. It will also probably work for two bare metal hosts or two VMs
-running in the local network. 
-If you try a cloud VM, since
-the Volttron Central dashboard is exposed in by using the `externalIPs` 
-key in the `vcentral-service.yml`, it will run afoul of the cloud
-virtual networking. You will need to set up a load balancer with the 
-cloud provider and expose the `vcentral` service as a `LoadBalancer` 
-service.
 
-[^1] Some CNI plugins that do not use overlays ("flat" drivers) 
-may allow broadcast and direct access to the host network, 
-this is an area for future work.
+## Option 1: Creating and configuring the VMs for both the central and gateway nodes using VirtualBox.
 
-## Installing and configuring the central and gateway base nodes with a Wireguard VPN.
+VMs running Ubuntu 20.04 with 2 vCPUs and 4 GB RAM are recommended. 
+The VM for the central node requires one network interface 
+while the VM for the gateway node requires two interfaces to support
+a two interface gateway pod. The following instructions step you through
+creating the two VMs on VirtualBox.
 
-### Installing and configuring the central node.
+### Import an ISO or clone an existing VM.
 
-The first step is to bring up a VM running Ubuntu 20.04 on a VirtualBox VM.
-A central node VM
-with 2 VCPUs and 4 GB RAM is recommended. After installing the VM, you should configure the network to open port 51820 for incoming traffic if necessary, 
-since this
-is the port Wireguard uses, in addition to port 22 for `ssh` access
-Also, write down the public IP address assigned to the VM and reserve 
-the address if necessary
-so that the VM will get the same address every time it boots. If you are
-using a VirtualBox VM for both your central node and gateway node, you
-should follow the directions in the next section for creating a central 
-node.
+You will need two VMs, one for the central node and one for the
+gateway node, so follow the instructions in this section twice.
 
-### Installing and configuring a VirtualBox VM
+To import a VM, you should have an ISO image of the VM available. Click on the 
+*New* button in the top menu of the VirtualBox app and follow the 
+series of dialog boxes to import the image.
 
-You will need a base VM or operating system with one interface for the 
-central node and two 
-network interfaces to support
-a two interface gateway pod. How you configure an additional 
-interface depends on what 
-operating system and/or VM manager you are using. 
-Kube-volttron was developed on 
-Ubuntu 20.04 using the VirtualBox VMM. 
-
-The next sections 
-describe how to create a VM on VirtualBox. If you are using a VM for
-both your central node and gateway node, you should follow the directions
-in these sections twice.
-
-#### Clone a VM or import an ISO for a new one.
-Clone an existing VM using VirtualBox by right clicking on the VM in the left side menu bar and choosing *Clone* from the VM menu. The VM should have
-the same memory and disk as for the central node.
+To clone an existing VM, right clicking on the VM you want to clone 
+in the left side 
+menu bar and choosing *Clone* from the VM menu. The VM should have
+the same memory and disk as for the central node. Name the central node VM
+`central-node` and the gateway node VM `gateway-node`.
 In the *MAC Address Policy* pulldown, scroll down to the setting *Generate new MAC addresses for all network adaptors*. It is important that each VM
-have a unique MAC address because Kubernetes uses the MAC address as part
+has a unique MAC address because Kubernetes uses the MAC address as part
 of its algorithm to name pods.
 
-#### Bring up the Network Settings tab
+
+### Bring up the Network Settings tab
 After the clone finishes, 
 right click on the new VM in the left side menu bar of the VirtualBox app
 to bring up the VM menu, then click on *Settings*. When
@@ -87,23 +75,155 @@ the *Settings* tab is up, click on *Network* in the left side menu bar. You shou
 
 ![Network Settings tab](image/vb-net-settings.png)
 
-Set your first interface to *Bridged Adaptor*.
+Set your first interface to *Bridged Adaptor*. Click on the *Advanced* arrow and make sure the *Cable Connected* 
+checkbox is checked. 
 
-#### Configure the second interface on the gateway node
+### Configure the second interface on the gateway node
 
 Click on the *Adaptor 2* tab then
 click the check box marked *Enable Network Adaptor*. Select the 
 *Bridged Adaptor* for the network type. Click on the *Advanced* arrow and make sure the *Cable Connected* 
 checkbox is checked. 
 
-#### Save the configuration
+### Save the configuration
 
-Save the configuration by clicking on the *OK* button on the bottom right.
+Save the configuration by clicking on the *OK* button at the bottom right.
 
-Start the gateway node VM  by bringing up the VM menu again and clicking
-on *Start*->*Normal Start* to start the gateway node VM.
+Start the VMs  by bringing up the VM menu again and clicking
+on *Start*->*Normal Start*.
 
-### Preinstallation host config, node uniqueness check, and routing configuration
+## Option 2: Create a gateway node VM on a local machine with VirtualBox and a central node VM in a public cloud.
+
+The first step is to create the gateway node on your local machine following
+the instructions in the previous section. Then follow the directions below
+to create a cloud VM for the central node.
+
+### Introduction to using a public cloud VM for the central node.
+
+While there are a few ways to export a service from a Kubernetes cluster,
+the primary way Kubernetes supports is by using service type called a
+LoadBalancer. LoadBalancer services require an additional piece of
+infrastructure, a cloud provider's load balancer service. 
+Load balancers are not cheap and if you
+look at the instructions for deploying them, they are really complicated
+with lots of places where things can go wrong. There
+is a load balancer available for non-managed service deployments, called
+[MetalLB](https://metallb.universe.tf/) but it doesn't work in cloud
+deployments because it does not have access to the cloud providers' 
+proprietary SDN APIs. 
+
+Instead of using a LoadBalancer service, we export the Volttron Central
+Web service using a NodePort service. NodePort services are restricted
+to a particular port range, but can be accessed from outside
+the cluster through the IP address provided in their Endpoint objects. 
+We expose the NodePort service
+through a public Internet address/DNS name provided by the cloud provider for
+the VM
+using the [Nginx reverse proxy](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/). A **reverse proxy** accepts incoming HTTP requests and
+simply forwards them to a different URI. This section explains how to open
+ports in the VM's Internet firewall and how to install Nginx, the instructions
+in [`../gateway-node/README.md`](../gateway-node/README.md) explain how
+to configure the Nginx reverse proxy after the instructions
+about how to deploy the `vcentral` microservice
+which runs the Volttron Central website.
+
+The figure below illustrates the overall architecture of `kube-volttron` with
+the Volttron Central web service and historian running in a cloud VM and
+the gateway node running in a local VM with Nginx reverse proxying the 
+Volttron Web site.
+
+![Cloud Volttron Deployment](image/cloud-deployment.png)
+
+### Creating a central node VM in a public cloud.
+
+Create a VM in a public cloud running Ubuntu 20.04 
+using the cloud provider's portal. 
+I created a Standard B2ms 2 vcpus, 8 G memory in Azure, so the instructions
+below assume you are working with the Azure portal. Name the VM `central-node`
+to make the following instructions easier.
+
+The cloud provider's firewall should
+have a port for SSH already open for the VM, but you will need to 
+open ports for Wireguard
+and the Nginx reverse proxy. Bring up the Azure dashboard
+display for your VM by clicking on *All resources*->*central-node*.
+In the left side menu, click on *Networking*. Click on the blue 
+*Add inbound port rule* button and fill out the form
+with the following for the Wireguard port:
+
+- *Source*: *IP Address*.
+- *Source IP addresses/CIDR ranges*: IP address of the `gateway-node` host. Use `whatsmyip.org` from your browser running on `gateway-node` to find it. 
+- *Source port ranges*: Leave at default of *** (any).
+- *Destination*: Leave at default of *Any*.
+- *Service*: Leave at *Custom*.
+- *Destination Port Ranges*: 51820, the Wireguard port
+- *Protocol*: Check the *UDP* box.
+- *Action*: Leave the *Allow* box checked.
+- *Priority*: Leave at the default.
+- *Name*: Wireguard.
+- *Description*: Port for Wireguard VPN.
+
+After you've configured a port for Wireguard, configure one for Nginx with
+the following:
+
+- *Source*: *IP Address*.
+- *Source IP addresses/CIDR ranges*: IP address of the `gateway-node` host. Use `whatsmyip.org` from your browser running on `gateway-node` to find it.
+- *Source port ranges*: Leave at default of *** (any).
+- *Destination*: leave at default of *Any*.
+- *Service*: *HTTP*.
+- *Destination Port Ranges*: It will be set to 80 and greyed out.
+- *Protocol*: Leave the *TCP* box checked.
+- *Action*: Leave the *Allow* box checked.
+- *Priority*: leave at the default.
+- *Name*: Nginx.
+- *Description*: Port for Nginx reverse proxy.
+
+### Install Nginx in the cloud VM
+
+The next step is to install Nginx on the `central-node` node cloud VM. 
+Use the instructions [here](https://docs.nginx.com/nginx/admin-guide/installing-nginx/installing-nginx-open-source/). They are very straightforward. You can
+install Nginx Plus if you want, but these instructions were developed with
+open source Nginx.
+
+Note that you can't configure Nginx yet because you need to know the IP
+address and port of the NodePort service `vcentral` will be using, which
+will come when we install `vcentral`.
+
+## Configuring the VMs for the Kubernetes cluster
+
+Prior to installing the cluster, the VMs require some additional configuration.
+
+### Disable any local firewalls
+
+Unless one or the other of your VMs is directly connected to the Internet
+without a cloud provider, ISP, or corporate firewall wall, you should 
+disable any firewall running directly on the VM since
+it may interfere with your ability to get to the Volttron Central website. 
+
+For example, if you think you may have `firewalld` running, 
+you can find out with:
+
+	systemctl status firewalld.service
+
+If you get output like this:
+
+	firewalld.service - firewalld - dynamic firewall daemon
+         Loaded: loaded (/lib/systemd/system/firewalld.service; enabled; vendor preset: enabled)
+         Active: active (running) since Tue 2022-07-12 15:05:27 UTC; 6h ago
+		 
+then use `systemctl` to  disable it: 
+	
+	sudo systemctl stop firewalld.service
+	sudo systemctl disable firewalld.service
+	
+If you are on a 
+corporate LAN, check with your security people if there is a corporate 
+firewall and, if so, you should request that the Wireguard port and the
+HTTP port be opened. If either or both of your VMs are directly connected
+to the Internet, then by all means, start a firewall and configure 
+the two ports to be opened directly on the VM! 
+
+### Preparing the operating system on both VMs
 
 Prior to installing Wireguard, be sure to set the hostname on both
 nodes:
@@ -114,7 +234,9 @@ and confirm the change with:
 
 	hostnamectl
 
-I named my central node `central-node` and my gateway node `gateway-node`.
+If you used the names `central-node` and `gateway-node` to create
+the VMs, the host name should be set, but if you cloned the VMs, you
+may need to change it.
 You should not have to reboot the node to have the hostname change take
 effect.
 
@@ -123,29 +245,44 @@ pods. Use the following to ensure that the two nodes have unique
 MAC addresses and machine ids:
 
 - Get the MAC address of the network interfaces using the command `ip link` or `ifconfig -a`,
-- Check the product\_uuid cby using the command `sudo cat /sys/class/dmi/id/product_uuid`.
+- Check the product\_uuid by using the command `sudo cat /sys/class/dmi/id/product_uuid`.
 
 Kubernetes also needs specific ports to be free, see [here](https://kubernetes.io/docs/reference/ports-and-protocols/) for list. You can check which ports are
 being used with:
 
 	sudo ss -lntp
 	
-Finally, we need to enable routing on both nodes by editing
-`/etc/sysctl.conf` as root
-and uncommenting `net.ipv4.ip_forward=1` and 
+Next, turn off swap on the VMs:
+
+	sudo swapoff -a
+	sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+	
+You can test whether your configuration has worked by running:
+
+	sudo sysctl -a | grep <routing variable>
+
+Next, we need to enable routing on both nodes by editing
+`/etc/sysctl.conf` as root and uncommenting `net.ipv4.ip_forward=1` and 
 `net.ipv6.conf.all.forwarding=1` to enable routing on the host after reboot, if they aren't already.
+
 Then use the command:
 
 	sudo sysctl <routing variable>=1
 
-where `<routing variable>` is  `net.ipv4.ip_forward` and `net.ipv6.conf.all.forwarding` to enable routing 
-in the running host.
+where `<routing variable>` is  `net.ipv4.ip_forward` and `net.ipv6.conf.all.forwarding` to enable routing in the running host.
 
 You can test whether your configuration has worked by running:
 
 	sudo sysctl -a | grep <routing variable>
 
-### Installing and configuring the Wireguard VPN
+Finally, enable the bridge net filter driver `br_netfilter`:
+
+	sudo modprobe br_netfilter
+	
+Edit the file `/etc/modules` as superuser and add a line with `br_netfilter` 
+on it so the module will be reloaded when the VM reboots.
+
+## Installing and configuring the Wireguard VPN
 
 Most of the pages with instructions for installing and configuring 
 Wireguard on the 
@@ -154,17 +291,17 @@ to other
 services, in order to hide your local machine's or mobile phone's IP address.
 The result is that the web pages include instructions for configuring iptables
 to route packets out of the VM, which are completely unnecessary for the
-kube-volttron use case. 
-Kube-volttron doesn't need this, since the only service the gateway nodes
+`kube-volttron` use case. 
+`kube-volttron` doesn't need this, since the only service the gateway nodes
 will be accessing is the Volttron Central service running on the central node. 
 The best guide I've found is at [this link](https://www.digitalocean.com/community/tutorials/how-to-set-up-wireguard-on-ubuntu-20-04). The author notes 
 where you can skip configuration instructions for deploying Wireguard as 
 a VPN server, and includes instructions for configuring with IPv6 which
 are nice if you have IPv6 available but only increase the complexity. Below,
 I've summarized the instructions for installing and configurating Wireguard
-specifically for the kube-volttron use case using IPv4.
+specifically for the `kube-volttron` use case using IPv4.
 
-#### Installing Wireguard and related packages
+### Installing Wireguard and related packages
 
 Update/upgrade on both the gateway node and central node with:
 
@@ -181,12 +318,13 @@ following instructions are based on installing `resolvconf`:
 	
 You should also install your favorite editor if it isn't there, and packages containing network debugging tools including `net-tools` and `inetutils-traceroute` (for `ifconfig` and `traceroute`) just in case you need them.
 
-#### Configuring the Wireguard VPN
+### Configuring the Wireguard VPN
 
-Wireguard creates a virtual interface on a node called the server
-across which a UDP VPN to other
+Wireguard creates a virtual interface on a node 
+across which a UDP VPN connects to other
 peers. The interface has a public and private key associated with it that
-is used for encrypting the packets. The link between one peer and another 
+are used for decrypting and encrypting the packets, respectively. 
+The link between one peer and another 
 is point to point. Wireguard comes with two utilities:
 
 - `wg`: the full command line utility for setting up a Wireguard interface.
@@ -198,9 +336,9 @@ The configuration file and public and private key files for the
 Wireguard are kept in the directory
 `/etc/wireguard`. 
 
-#### Configuring the central node as a Wireguard server
+### Configuring the central node as a Wireguard peer
 
-##### Generating public and private keys 
+#### Generating public and private keys 
 
 Starting on your central node, generate a private and public key using the 
 Wireguard `wg` command line utility:
@@ -208,7 +346,7 @@ Wireguard `wg` command line utility:
 	wg genkey | sudo tee /etc/wireguard/private.key
 	sudo chmod go= /etc/wireguard/private.key
 
-The first command generates a base64 encoded key and echos it to 
+The first command generates a base64 encoded key and echoes it to 
 `/etc/wireguard/private.key` and to the terminal, the second changes 
 the permissions so
 nobody except root can look at it.
@@ -220,24 +358,24 @@ Next, generate a public key from the private key as follows:
 This command first writes the private key from the file to `stdout`, then generates the public key with `wg pubkey`, then writes the public key to 
 `/etc/wireguard/public.key` and to the terminal. 
 
-##### Choosing an IP address range for your VPN subnet
+#### Choosing an IP address range for your VPN subnet
 
 The next step is to choose an IP address range for the VPN subnet on which
-your gateway nodes will run. You have a choice of three different ranges 
-having the following CIDRs:
+your VPN nodes will run. You have a choice of three different ranges 
+having the following CIDRs, all private address space:
 
     10.0.0.0/8
     172.16.0.0/12
     192.168.0.0/16
                                                                                                      	
-We'll use `10.8.0.0/24`, with the central node server 
-having address `10.8.0.1` and the first
-gateway node having `10.8.0.2`. Note that these addresses are only
+We'll use `10.8.0.0/24`, with the `central-node`
+having address `10.8.0.1` and `gateway-node` having `10.8.0.2`. 
+Note that these addresses are only
 the address of the Wireguard point to point VPN interface, and have nothing
 to do with the IP addresses of other interfaces in your gateway node or 
 central node.
 
-##### Creating the `wg0` interface configuration file on the central node
+#### Creating the `wg0` interface configuration file on the central node
 
 The next step is to create a configuration file for the central node
 which acts as the Wireguard server. 
@@ -252,10 +390,10 @@ Using your favorite editor, open a new file `/etc/wireguard/wg0.conf`
 
 Save the file and exit the editor.
 
-##### Installing a system service for the `wg0` interface
+#### Installing a system service for the `wg0` interface
 
 We'll use `systemctl` to create a service that creates and configures
-the Wireguard `wg0` interface when the node boots. To enable a system 
+the Wireguard `wg0` interface when the node boots. To enable the system 
 service, use:
 
 	sudo systemctl enable wg-quick@wg0.service
@@ -292,16 +430,16 @@ to see the service status. This should show something like:
 Notice that the status prints out the `ip` commands that were used to
 create the interface.
 
-#### Configuring the gateway node as a Wireguard peer
+### Configuring the gateway node as a Wireguard peer
 
-Next, we'll configure Wireguard on the gateway node. 
+Next, we'll configure Wireguard on `gateway-node`. 
 
-##### Generating the public and private keys on the gateway node
+#### Generating the public and private keys on the gateway node
 
 Follow the directions in the section above about how to generate the
-keys on the central node.
+keys.
 
-##### Creating the `wg0` interface configuration file on the gateway node
+#### Creating the `wg0` interface configuration file on the gateway node
 
 As on the central node, edit the file `/etc/wireguard/wg0.conf`:
 
@@ -315,14 +453,14 @@ As on the central node, edit the file `/etc/wireguard/wg0.conf`:
 	Endpoint = <insert public IP address of your central node here>:51820
 	PersistentKeepalive = 21
 
-Add the private key of the gateway node, public key of the central node,
-and public IP address of the central node where indicated. The public
+Add the private key of the `gateway-node`, public key of `central-node`,
+and public IP address of `central-node` where indicated. The public
 IP address could also just be a DHCP address on the local subnet if
 you are using a local VM for the central node. Save the file and exit the editor.
 
-#### Adding the gateway node public key to the central node `wg0` interface
+### Adding the gateway node public key to the central node `wg0` interface
 
-On the central node, run the following command:
+On the `central-node`, run the following command:
 
 	sudo wg set wg0 peer <insert gateway node public key here> allowed-ips 10.8.0.0/24
 	
@@ -351,16 +489,16 @@ after the top section:
 	Endpoint = <insert public IP address of your gateway node here>:51820
 	PersistentKeepalive = 21
 
-This will ensure the connection comes up if the central node VM happens to 
+This will ensure the connection comes up if `central-node` happens to 
 go down without saving the interface configuration.
 
 
-#### Connecting the gateway node to the tunnel
+### Connecting the gateway node to the tunnel
 
 Follow the same steps as in the section on installing a system service on 
-the central node to start the system service on the gateway.
+the central node to start the system service on the gateway node.
 
-#### Checking for bidirectional connectivity
+### Checking for bidirectional connectivity
 
 Check for bidirectional connectivity by pinging first on the central node:
 
@@ -370,7 +508,7 @@ then on the gateway node:
 
 	ping 10.8.0.1
 
-#### Configuring additional gateway nodes.
+### Configuring additional gateway nodes.
 
 To configure additional gateway nodes, install Wireguard on the node and 
 generate
@@ -379,7 +517,7 @@ for the gateway node `wg0` interface in the `10.8.0.0/24` range, incrementing
 the last number by one each time you configure a new node. You can
 have a maximum of 254 gateway nodes on the VPN. Create a 
 configuration file for `wg0` in `/etc/wireguard/wg0.conf` on
-the gateway node, being sure
+the new gateway node, being sure
 to add the appropriate keys and IP address as described above. You can copy
 the file above and change the configuration key values as appropriate. Use
 the `systemctl` commands above for starting the Wireguard service on the new 
@@ -394,21 +532,11 @@ These instructions are a condensation of the `kubeadm` installation
 instructions [here](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/) and cluster configuration instructions
 [here](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/)
 
-### Preparing the operating system on both nodes
+### Installing the Kubernetes packages
 
-First, turn off swap:
+Perform the following steps on both nodes.
 
-	sudo swapoff -a
-	sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
-	
-Next, enable the bridge net filter driver `br_netfilter`:
-
-	sudo modprobe br_netfilter
-	
-Finally, edit the file `/etc/modules` and add a line with `br_netfilter` 
-on it so the module will be reloaded when the VM reboots.
-
-### Installing the `containerd` container runtime and configuring a system service
+#### Installing the `containerd` container runtime package and configuring a system service
 
 Instructions for installing the latest version of `containerd` and 
 configuring can be found 
@@ -423,8 +551,6 @@ with properly formatted unit file, start the service, and
 install a container runtime socket in the right place, which has the
 added advantage of installing the default `systemd` 
 [cgroup driver](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/configure-cgroup-driver/).
-
-### Installing the Kubernetes services and `kubeadm`
 
 #### Check whether the nodes have the Kubernetes `apt` repo.
 
@@ -441,7 +567,7 @@ If you see something like:
 
 Skip forward to the next section. If not, then do the following.
 
-Update the apt package index and install packages needed to use the Kubernetes apt repository:
+Update the `apt` package index and install packages needed to use the Kubernetes apt repository:
 
 	sudo apt-get update
 	sudo apt-get install -y apt-transport-https ca-certificates curl
@@ -454,36 +580,44 @@ Add the Kubernetes apt repository:
 
 	echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 	
-#### Installing the Kubernetes system utilities
+#### Installing the Kubernetes system utility packages and `kubeadm`
 
-To install the Kubernetes utilities type the following commands:
+To install the Kubernetes utilities and `kubeadm` type the following commands:
 
 	sudo apt-get update
 	sudo apt-get install -y kubelet kubeadm kubectl
 	sudo apt-mark hold kubelet kubeadm kubectl
 
-This installs `kubelet` as a systemd service and marks the Kubernetes 
-utilites so that they are not automatically updated.
+This installs `kubelet` as a `systemd` service and marks the Kubernetes 
+utilites so that they are not automatically updated. The `kubelet` on
+the `gateway-node` will need some configuration but we need to configure it
+after the gateway node has joined the cluster.
+
+Note that if the installtion suggests you install any firewall packages, 
+don't install them since this will considerably complicate the cluster
+connectivity. If you followed the directions above on firewalls, you should
+already have a firewall installed, running, and configured if your host
+is connected directly to the Internet.
 
 ## Creating a cluster with `kubedm`
 
-#### Configuring the central node as the control node
+### Installing `central-node` as a control node
 
-First step is to run `kubeadm` with arguments specific to central node
-host on the central node. The following arguments need to be set:
+First step is to run `kubeadm` with arguments specific to configuring 
+`central-node` as a control node
+The following arguments need to be set:
 
 - Since we are using Flannel, we need to reserve the pod CIDR using 
 `--pod-network-cidr=10.244.0.0/16`. This reserves
 IP address space for the inter-pod, intra-cluster network.
 
-- We need to advertise the API server and the central node
+- We need to advertise the API server 
 on the `wg0` interface so all
 traffic between the central node 
 and the gateway nodes is encrypted.
 If you followed the Wireguard numbering scheme above, 
-then use `--apiserver-advertise-address=10.8.0.1` 
-`--control-plane-endpoint=10.8.0.1`, otherwise,
-substitute the address you assigned to the `wg0` interface on the control
+then use `--apiserver-advertise-address=10.8.0.1`, otherwise,
+substitute the address you assigned to the `wg0` interface on the central
 node.
 
 -- The `containerd` socket should be specified using the argument 
@@ -492,7 +626,7 @@ there are any other container runtime sockets lying about.
 
 Run `kubeadm init` on the central node:
 
-	sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=10.8.0.1 --control-plane-endpoint=10.8.0.1 --cri-socket=unix:///var/run/containerd/containerd.sock
+	sudo kubeadm init --pod-network-cidr=10.244.0.0/16 --apiserver-advertise-address=10.8.0.1 --cri-socket=unix:///var/run/containerd/containerd.sock
 	
 When `kubeadm` is finished, it will print out:
 
@@ -518,43 +652,11 @@ you need to run the following as a regular user:
 Copy down the final `kubeadm join` command since we will use this shortly to
 join the gateway node to the central node control plane.
 
-#### Installing the CNI networking plugins on the central node
-
-The following steps should be done on the central control node _only_.
-
-To install Flannel:
-
-	kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-	
-To install Multus, first clone the Multus git repo:
-
-	git clone https://github.com/k8snetworkplumbingwg/multus-cni
-	
-Then change into the `multus-cni` directory apply the yaml manifest:
-
-	cat ./deployments/multus-daemonset-thick-plugin.yml | kubectl apply -f -
-	
-You can check if Flannel and Multus are running with:
-
-	kubectl get -n kube-system pods | grep flannel
-
-which should print:
-
-	kube-flannel-ds-t5k5b                 1/1     Running   0          8m6s
-	
-And:
-
-	kubectl get -n kube-system pods | grep multus
-
-which should print:
-
-	kube-multus-ds-r9mg8                  1/1     Running   0          2m41s
-	
 #### Removing the taint on the control node prohibiting application workload deployment.
 
-As installed out of the box, `kubeadm` places a taint on the control node
+As installed out of the box, `kubeadm` places taints on the control node
 disallowing deployment of application workloads. Since we want to deploy the
-Volttron Central pod `vcentral` here, we need to remove the taint:
+Volttron Central pod `vcentral` there, we need to remove the taints:
 
 	kubectl taint node <central node hostname> node-role.kubernetes.io/master-
 	
@@ -570,68 +672,161 @@ You can check if the node is untainted with:
 
 	kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints --no-headers
 	
-which should show `<none>` for both on the central node.
+which should show `<none>` on the central node.
 
-#### Configuring the gateway node as a worker node
+#### Installing the Flannel CNI plugin on the central node
 
-To join the gateway node to the cluster as a worker node, use the
+On `central-node`, use the file `kube-flannel-wireguard.yaml` 
+to install Flannel. By default, 
+the Flannel controller assumes it should use the IP address from the 
+first nonloopback interface as the public address of the node. 
+The `kube-flannel-wireguard.yml` manifest 
+contains some code to tell the Flannel controller
+that the machine's interface is `wg0` instead of `enp0s3`. 
+Install Flannel before bringing up the `gateway-node`.
+
+To install Flannel:
+
+	kubectl apply -f kube-flannel-wireguard.yaml
+	
+Note that Flannel now deploys into its own namespace, `kube-flannel`, 
+rather than into the `kube-system` namespace.
+
+You can check if Flannel is running with:
+
+	kubectl get -n kube-flannel all
+
+Flannel uses an annotation on the Kubernetes
+Node object to determine the public IP address of the node.
+Check for the annotation with:
+
+	kubectl describe node <node-name> | grep flannel.alpha.coreos.com/public-ip
+
+where `<node-name>` is `central-node` now and `gateway-node` later
+when you bring it up. It should  be `10.8.0.1` on `central-node`. 
+When `gateway-node` is up, check that it is `10.8.0.2`.
+
+Also, you need to turn the checksum off on the `flannel.1` interface
+to improve performance. The one shot command is :
+
+	sudo ethtool -K flannel.1 tx off
+	
+For reboot, set up a `systemd` service as follows. 
+
+- Copy the file `100-flannel-trigger-rules` into `/etc/udev/rules.d`
+
+- Copy the file `flannel-created@.service` into `/etc/systemd/system`.
+
+- Reload via:
+
+	`sudo systemctl daemon-reload
+	sudo systemctl restart systemd-udevd.service`
+
+
+#### Installing the Multus CNI plugin on the central node
+
+The Multus CNI driver enables pods to have multiple interfaces, and we
+need it to get a second interface on the BACnet pod `vbac` so it can
+access BACnet devices on the site local area network. To install Multus, 
+first clone the Multus git repo on `central-node`:
+
+	git clone https://github.com/k8snetworkplumbingwg/multus-cni
+	
+Then change into the `multus-cni` directory and apply the yaml manifest:
+
+	cat ./deployments/multus-daemonset-thick-plugin.yml | kubectl apply -f -
+	
+To check whether Multus is running:
+
+	kubectl get -n kube-system pods | grep multus
+
+###  Installing `gateway-node` as a worker node
+
+Perform the following steps on `gateway-node`.
+
+#### Configuring `gateway-node` to join the cluster as a worker node
+
+To join `gateway-node` to the cluster as a worker node, use the
 `kubeadm join` command that `kubadm init` printed out just before
-it finished adding on the argument for the CRI socket, [^2] for example:
+it finished, adding on the argument for the CRI socket, for example:
 
 	sudo kubeadm join 10.8.0.1:6443 --token <your token> \
 	--discovery-token-ca-cert-hash <your discovery hash> --cri-socket=unix:///var/run/containerd/containerd.sock
 	
 The token is only good for a day, if you need to install more gateway nodes,
-use this command on the control node to create a new one:
+use this command on `central-node` to create a new one:
 
 	kubeadm token create
 
-If you don't have the value of `--discovery-token-ca-cert-hash` you can find by running this command on the control node:
+If you don't have the value of `--discovery-token-ca-cert-hash` you can find by running this command on `central-node`:
 
 	openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | \
 	openssl dgst -sha256 -hex | sed 's/^.* //'
 
 	
 Finally, to use `kubectl` on the gateway node to deploy pods, you need
-to copy the config file over from the control node to the gateway node. 
-You should copy the file to your VirtualBox shared folder on the central
-node and from there to the gateway node.
-VM on the same host as the gateway node: 
+to copy the config file from your `~/.kube` directory 
+over from the control node to the gateway node. 
 Also copy the file into `/etc/kubernetes/admin.conf` as root on the 
 gateway node so other users have access to it.
-	
-Check if everything is running OK by running `kubectl` on the gateway:
 
-	kubectl get -n kube-system pods --output wide
+#### Reinitializing the `kubelet` on `gateway-node` with the `wg0` IP address
 
-	NAME                                   READY   STATUS    RESTARTS   AGE     IP              NODE           NOMINATED NODE   READINESS GATES
-	coredns-6d4b75cb6d-9qbq4               1/1     Running   0          32m     10.244.0.2      central-node   <none>           <none>
-	coredns-6d4b75cb6d-gkklf               1/1     Running   0          32m     10.244.0.3      central-node   <none>           <none>
-	etcd-central-node                      1/1     Running   0          32m     192.168.0.128   central-node   <none>           <none>
-	kube-apiserver-central-node            1/1     Running   0          32m     192.168.0.128   central-node   <none>           <none>
-	kube-controller-manager-central-node   1/1     Running   0          32m     192.168.0.128   central-node   <none>           <none>
-	kube-flannel-ds-q66n8                  1/1     Running   0          21m     192.168.0.128   central-node   <none>           <none>
-	kube-flannel-ds-rfgpb                  1/1     Running   0          5m11s   192.168.0.122   gateway-node   <none>           <none>
-	kube-multus-ds-jm49z                   1/1     Running   0          5m11s   192.168.0.122   gateway-node   <none>           <none>
-	kube-multus-ds-vx26w                   1/1     Running   0          19m     192.168.0.128   central-node   <none>           <none>
-	kube-proxy-7hr8p                       1/1     Running   0          32m     192.168.0.128   central-node   <none>           <none>
-	kube-proxy-f9vhp                       1/1     Running   0          5m11s   192.168.0.122   gateway-node   <none>           <none>
-	kube-scheduler-central-node            1/1     Running   0          32m     192.168.0.128   central-node   <none>           <none>
+The `kubeadm join` command uses the first interface on the node to 
+to determine the Node object's public IP address. This address is then
+used to start the `kubelet` which acts as the local node manager.
+Since `wg0` is not the 
+first interface, the node's `kubelet` may not be
+accessable from `central-node` if the the central and gateway nodes are
+not in the same routing domain. In addition, if the Kubernetes control
+plane doesn't run over the Wireguard VPN, it will not be encrypted.
+We need to reinitialize the `kubelet` with the correct 
+address. If this step is not taken, `central-node` will get a routing
+error when it tries to contact the `kubelet` on `gateway-node`, for example,
+when trying to `exec` into a pod using `kubectl`.
 
-[^2] If `kubeadm init` prints out a bogus argument, 
-`--control-plane` as the 
-last argument, ignore it, it's a bug. You've already specified the 
-control plane node in the second argument. Don't include it in the
-`kubeadm join` command.
+First step is to edit the `kubelet` file in this directory and 
+replace `10.8.0.2` with 
+the IP address of your `wg0` interface if you changed it 
+then copy the file into `/etc/default`. The arguments are 
+added to the startup command for the `kubelet` 
+by the `systemd` unit file and will cause the `kubelet` to report that 
+the IP address of the node is the same as the `wg0` interface rather than 
+that of a default interface like `enp0s3`.
 
-#### Deploying the CNI DHCP relay
+Second step is to edit the file `/var/lib/kubelet/config.yaml` and 
+add a line after the `apiVersion:` line with the `address:` key and `wg0`
+IP address as the value, for example:
+
+	address: 10.8.0.2
+
+This will cause the `kubelet` to listen on that address rather than the
+default (`0.0.0.0`) [^1]
+
+Finally, restart the `kubelet` using `systemctl`:
+
+	sudo systemctl stop kubelet
+	sudo systemctl disable kubelet
+	sudo systemctl enable kubelet
+	sudo systemctl start kubelet
+
+You can test it by checking what interface the `kubelet` is running on:
+
+	sudo ss -ltp | grep kubelet
+	LISTEN    0         4096             127.0.0.1:10248             0.0.0.0:*       users:(("kubelet",pid=4748,fd=35))                                             
+	LISTEN    0         4096              10.8.0.2:10250             0.0.0.0:*       users:(("kubelet",pid=4748,fd=27))                  
+
+[^1]: Strictly speaking, this isn't necessary since the `kubelet` will listen
+to all addresses but it helps confine any communication to the VPN.
+
+#### Deploying the CNI DHCP relay on `gateway-node`
 
 Multus requires IP address management (ipam) to be specified for the second
 interface in pods. The yaml manifest for deploying the 
 BACnet gateway pod on the gateway node
 uses DHCP for ipam to obtain an address on the site local network. 
 The CNI DHCP relay must be running
-on the node (not in the Kubernetes cluster) to connect with the local
+on the gateway node itself to connect with the local
 subnet DHCP server. This section describes how to deploy the CNI DHCP
 relay as a `systemctl` service so the relay is restarted when the node
 reboots. Although we only need an address on the gateway site network,
@@ -649,9 +844,8 @@ change the permissions on it so the daemon can access it:
 	sudo mkdir /run/cni
 	sudo chmod a+rx /run/cni
 
-The next step is to copy the `systemd` unit file in `cluster-config`
-into create a `systemctl` unit for the service and enable and start it, which starts the 
-daemon, as follows:
+The next step is to copy the `cni-dhcpd-relay.service` file in this directory
+into `/etc/systemd/system`, enable and start the service:
 
 	sudo cp cni-dhcpd-relay.service /etc/systemd/system
 	sudo systemctl daemon-reload
@@ -694,7 +888,39 @@ which should print out something like this:
 
 	root       83307  0.0  0.0 110288  6540 ?        Ssl  19:10   0:00 /opt/cni/bin/dhcp daemon
 	
-Your cluster should now be ready to deploy the microservice-volttron services!
+### Checking whether the cluster came up OK
+
+Check if everything is running OK by running `kubectl` on `gateway-node`:
+
+	kubectl get -n kube-system pods --output wide
+	
+you should get output looking like this:
+
+	NAME                                   READY   STATUS    RESTARTS       AGE   IP           NODE            NOMINATED NODE   READINESS GATES
+	coredns-6d4b75cb6d-n54qd               1/1     Running   1 (12m ago)    24h   10.244.0.5   central-node    <none>           <none>
+	coredns-6d4b75cb6d-zdz4l               1/1     Running   1 (12m ago)    24h   10.244.0.6   central-node    <none>           <none>
+	etcd-central-node                      1/1     Running   25 (12m ago)   24h   10.0.0.4     central-node    <none>           <none>
+	kube-apiserver-central-node            1/1     Running   1 (12m ago)    24h   10.0.0.4     central-node    <none>           <none>
+	kube-controller-manager-central-node   1/1     Running   1 (12m ago)    24h   10.0.0.4     central-node    <none>           <none>
+	kube-multus-ds-6fdj6                   1/1     Running   0              24h   10.8.0.2     gateway-node2   <none>           <none>
+	kube-multus-ds-9kpls                   1/1     Running   1 (12m ago)    24h   10.0.0.4     central-node    <none>           <none>
+	kube-proxy-6pmkf                       1/1     Running   0              24h   10.8.0.2     gateway-node2   <none>           <none>
+	kube-proxy-gpcgk                       1/1     Running   1 (12m ago)    24h   10.0.0.4     central-node    <none>           <none>
+	kube-scheduler-central-node            1/1     Running   1 (12m ago)    24h   10.0.0.4     central-node    <none>           <none>
+
+
+And for the Flannel network:
+
+	kubectl get -n kube-flannel pods --output wide
+
+and you should get output like this:
+
+	NAME                    READY   STATUS    RESTARTS      AGE   IP         NODE            NOMINATED NODE   READINESS GATES
+	kube-flannel-ds-7jd8x   1/1     Running   1 (14m ago)   24h   10.0.0.4   central-node    <none>           <none>
+	kube-flannel-ds-mqbt7   1/1     Running   1 (24h ago)   24h   10.8.0.2   gateway-node2   <none>           <none>
+	
+Your cluster should now be ready to deploy the microservice Volttron services!
+
 
 ## Troubleshooting
 
@@ -704,19 +930,27 @@ pages. One for kubeadm is [here](https://kubernetes.io/docs/setup/production-env
 back on Linux networking and sysadmin documentation. You can watch the progress
 on pod deployment with:
 
-	ku get --watch -n <namespace> pods
-	
+	kubectl get --watch -n <namespace> pods
+
 and events with:
 
-	ku get --watch events
+	kubectl get --watch events
 	
+Specific per pod events can be viewed with:
+
+	kubectl describe -n <namespace> <pod name>
+
+
 Pod logs can be viewed with:
 
-	ku logs --watch -n <namespace> <pod name>
+	kubectl logs --watch -n <namespace> <pod name>
 	
 Without the `--watch` argument, it prints out the latest and you 
 can leave off the namespace argument if the item of interest is in
 the default namespace. 
+
+You can also use `systemctl status` for system services and 
+`journalctl -u <service name>` to check their logs.
 
 
 

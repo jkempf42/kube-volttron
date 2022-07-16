@@ -746,13 +746,11 @@ Perform the following steps on `gateway-node`.
 #### Configuring `gateway-node` to join the cluster as a worker node
 
 To join `gateway-node` to the cluster as a worker node, use the
-`kubeadm join` command that `kubadm init` printed out just before
-it finished, adding on the argument for the CRI socket, for example:
+`join.sh` shell script you created above:
 
-	sudo kubeadm join 10.8.0.1:6443 --token <your token> \
-	--discovery-token-ca-cert-hash <your discovery hash> --cri-socket=unix:///var/run/containerd/containerd.sock
+	sudo ./join.sh
 	
-The token is only good for a day, if you need to install more gateway nodes,
+Note that the token is only good for a day, if you need to install more gateway nodes,
 use this command on `central-node` to create a new one:
 
 	kubeadm token create
@@ -764,7 +762,7 @@ If you don't have the value of `--discovery-token-ca-cert-hash` you can find by 
 
 	
 Finally, to use `kubectl` on the gateway node to deploy pods, you need
-to copy the config file from your `~/.kube` directory 
+to copy the `config` file from your `~/.kube` directory 
 over from the control node to the gateway node. 
 Also copy the file into `/etc/kubernetes/admin.conf` as root on the 
 gateway node so other users have access to it.

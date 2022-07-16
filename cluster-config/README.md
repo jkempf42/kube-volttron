@@ -385,9 +385,32 @@ and public IP address of `central-node` where indicated. The public
 IP address could also just be a DHCP address on the local subnet if
 you are using a local VM for the central node. Save the file and exit the editor.
 
-### Installing a system service for the `wg0` interface on `gateway-node`
+### Creating the `wg0` interface configuration file on the `central node`
 
-We'll use `systemctl` to create a service that creates and configures
+The next step is to create a configuration file for `central-node`.
+Using your favorite editor, open a new file `/etc/wireguard/wg0.conf` 
+(running as `sudo`). Edit the file to insert the following configuration:
+
+	[Interface]
+	PrivateKey = <insert private key of central-node here>
+	Address = 10.8.0.1/24
+	ListenPort = 51820
+	
+	[Peer]
+	PublicKey = <insert gateway-node public key here>
+	AllowedIPs = 10.8.0.0/24
+	Endpoint = <insert public IP address of gateway-node here>:51820
+	PersistentKeepalive = 21
+
+Add the private key of the `central-node`, public key of `gateway-node`,
+and public IP address of `gateway-node` where indicated. The public
+IP address could also just be a DHCP address on the local subnet if
+you are using a local VM for both nodes. Save the file and exit the editor.
+
+### Installing a system service for the `wg0` interface 
+
+Starting on `gateway-node`, we'll use `systemctl` to create a s
+ervice that creates and configures
 the Wireguard `wg0` interface when the node boots. To enable the system 
 service, use:
 
@@ -425,35 +448,11 @@ to see the service status. This should show something like:
 Notice that the status prints out the `ip` commands that were used to
 create the interface. You can also see the `wg0` interface using:
 
-	ip link
+	ip address
 
-### Creating the `wg0` interface configuration file on the `central node`
-
-The next step is to create a configuration file for `central-node`.
-Using your favorite editor, open a new file `/etc/wireguard/wg0.conf` 
-(running as `sudo`). Edit the file to insert the following configuration:
-
-	[Interface]
-	PrivateKey = <insert private key of central-node here>
-	Address = 10.8.0.1/24
-	ListenPort = 51820
-	
-	[Peer]
-	PublicKey = <insert gateway-node public key here>
-	AllowedIPs = 10.8.0.0/24
-	Endpoint = <insert public IP address of gateway-node here>:51820
-	PersistentKeepalive = 21
-
-Add the private key of the `central-node`, public key of `gateway-node`,
-and public IP address of `gateway-node` where indicated. The public
-IP address could also just be a DHCP address on the local subnet if
-you are using a local VM for both nodes. Save the file and exit the editor.
-
-### Installing a system service for the `wg0` interface on `central-node`
-
-Follow the same instructions as above for installing a system service to bring
-up the `wg0` interface on the central node.
-
+After you've started the system service on `gateway-node`,
+follow the same instructions as above for installing a system service to bring
+up the `wg0` interface on `central-node`.
 
 ### Checking `wg0` status and bidirectional connectivity
 
@@ -462,6 +461,17 @@ You can check the status of the `wg0`interface by running:
 	sudo wg
 
 on both nodes. It should print out something like:
+
+	public key: dScu7fYSEKrZFdNYqycAyeqJdz9utYXGcgYP9YPc2Sg=
+	private key: (hidden)
+	listening port: 51820
+
+	peer: V7EWFuM1qARFs1ldwCx2P6HOMcTMU5yY51QSw4t5gCI=
+  	  endpoint: 20.94.218.214:51820
+	  allowed ips: 10.8.0.0/24
+	  latest handshake: 1 minute, 42 seconds ago
+	  transfer: 1.29 KiB received, 4.72 KiB sent
+	  persistent keepalive: every 21 seconds
 
 where the important point is that the keep-alive transfer is not showing zero.
 

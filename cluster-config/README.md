@@ -718,7 +718,7 @@ For reboot, set up a `systemd` service as follows.
 
 - Reload via:
 
-	`sudo systemctl daemon-reload
+	`sudo systemctl daemon-reload &&
 	sudo systemctl restart systemd-udevd.service`
 
 

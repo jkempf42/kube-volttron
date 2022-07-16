@@ -634,10 +634,12 @@ When `kubeadm` is finished, it will print out:
 
 	kubeadm join <control-plane-host>:<control-plane-port> --token <token> --discovery-token-ca-cert-hash sha256:<hash>
 
-Create a shell script file on `gateway-node` in `kube-volttron/cluster-config` called `join.sh`
+Since we will use the `kubeadm join` shortly to
+join the `gateway-node` to the `central-node` control plane,
+create a shell script file on `gateway-node` in `kube-volttron/cluster-config` called `join.sh`
 with the first line `#! /bin/bash` and copy the `kubeadm join` command into 
-it since we will use this shortly to
-join the `gateway-node` to the `central-node` control plane. Make the file executable
+it. Add `--cri-socket=unix:///var/run/containerd/containerd.sock` at the end of the second line, save and exit the editor
+Make the file executable
 with `chmod a+x join.sh` so it can run as a shell script.
 
 To start using your cluster as a nonroot user, 

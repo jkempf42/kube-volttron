@@ -634,6 +634,11 @@ When `kubeadm` is finished, it will print out:
 
 	kubeadm join <control-plane-host>:<control-plane-port> --token <token> --discovery-token-ca-cert-hash sha256:<hash>
 
+Create a shell script file on `gateway-node` in `kube-volttron/cluster-config` called `join.sh`
+with the first line `#! /bin/bash` and copy the `kubeadm join` command into 
+it since we will use this shortly to
+join the `gateway-node` to the `central-node` control plane. Make the file executable
+with `chmod a+x join.sh` so it can run as a shell script.
 
 To start using your cluster as a nonroot user, 
 you need to run the following as a regular user:
@@ -642,10 +647,7 @@ you need to run the following as a regular user:
 	sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 	sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-Create a shell script file on `gateway-node` in `kube-volttron/cluster-config` called `join.sh`
-with the first line `#! /bin/bash` and copy final `kubeadm join` command into 
-it since we will use this shortly to
-join the `gateway-node` to the `central-node` control plane.
+
 
 #### Removing the taint on the control node prohibiting application workload deployment.
 

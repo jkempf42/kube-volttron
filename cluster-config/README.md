@@ -712,9 +712,9 @@ to improve performance. The one shot command is :
 	
 For reboot, set up a `systemd` service as follows. 
 
-- Copy the file `100-flannel-trigger-rules` into `/etc/udev/rules.d`
+- As superuser, copy the file `100-flannel-trigger-rules` into `/etc/udev/rules.d`
 
-- Copy the file `flannel-created@.service` into `/etc/systemd/system`.
+- As superuser, copy the file `flannel-created@.service` into `/etc/systemd/system`.
 
 - Reload via:
 

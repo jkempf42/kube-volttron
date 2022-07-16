@@ -293,8 +293,8 @@ peers. The interface has a public and private key associated with it that
 are used for decrypting and encrypting the packets, respectively. 
 The link between one peer and another 
 is point to point. 
-We will be using the 10.8.0.0/24` subnet over `wg0` with the
-`central-node having address 10.8.0.1 and `gateway-node` having address
+We will be using the 10.8.0.0/24 subnet over `wg0` with the
+`central-node` having address 10.8.0.1 and `gateway-node` having address
 10.8.0.2.
 
 Most of the pages with instructions for installing and configuring 

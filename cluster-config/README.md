@@ -198,6 +198,24 @@ will come when we install `vcentral`.
 
 Prior to installing the cluster, the VMs require some additional configuration.
 
+### Find the public IP addresses of `gateway-node` and `central-node`
+
+You will need these for configuring the Wireguard VPN. If both nodes are running in VirtualBox VMs
+on the same site local network, then the IP address should be the address on 
+the interface with the smallest number as the last character in it's name, for
+example `enp0s3`. You can use `ip address` to find it. 
+
+If the `central-node is running on a cloud VM, the public IP address should be on
+the dashboard for the VM. For example, in Azure, it is located in a field
+with title *Public IP address:*. The public address of the `gateway-node`
+depends on whether you are running in a corporate LAN or accessing the
+Internet through an ISP network. If you are running in a corporate LAN,
+ask your IP support people what you should use for your public IP 
+address. If you are connecting through an ISP, as described above,
+you can find your address at `whatsmyip.org`
+
+Write down both addresses somewhere.
+
 ### Disable any local firewalls
 
 Unless one or the other of your VMs is directly connected to the Internet

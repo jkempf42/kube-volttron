@@ -686,7 +686,7 @@ Install Flannel before bringing up the `gateway-node`.
 
 To install Flannel:
 
-	kubectl apply -f kube-flannel-wireguard.yaml
+	kubectl apply -f kube-flannel-wireguard.yml
 	
 Note that Flannel now deploys into its own namespace, `kube-flannel`, 
 rather than into the `kube-system` namespace.

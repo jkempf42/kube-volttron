@@ -39,7 +39,6 @@ local network directly through Flannel.
 The instructions were developed on the Ubuntu 20.04 operating system, so
 your mileage may vary if you use a different one.
 
-
 ## Option 1: Creating and configuring the VMs for both the central and gateway nodes using VirtualBox.
 
 VMs running Ubuntu 20.04 with 2 vCPUs and 4 GB RAM are recommended. 
@@ -95,7 +94,10 @@ on *Start*->*Normal Start*.
 ## Option 2: Create a gateway node VM on a local machine with VirtualBox and a central node VM in a public cloud.
 
 The first step is to create the gateway node on your local machine following
-the instructions in the previous section. Then follow the directions below
+the instructions in the previous section, and find the public IP address of the gateway node.
+You can find the address by browsing to [`whatsmyip.org`](http://www.whatsmyip.org) from a browser running on `gateway-node`.
+You should write it down because you will need it during Wireguard configuration.
+Then follow the directions below
 to create a cloud VM for the central node.
 
 ### Introduction to using a public cloud VM for the central node.
@@ -145,7 +147,6 @@ to make the following instructions easier.
 The cloud provider's firewall should
 have port 22 open for SSH on the VM. If the source is *Any*, meaning any IP address, you should set the 
 source to the `gateway-node` VM IP address since you will likely want to work from a shell window there.
-You can find the address by browsing to [`whatsmyip.org`](http://www.whatsmyip.org) from a browser running on `gateway-node`.
 
 You will need to 
 open ports for Wireguard
@@ -303,6 +304,16 @@ are nice if you have IPv6 available but only increase the complexity. Below,
 I've summarized the instructions for installing and configurating Wireguard
 specifically for the `kube-volttron` use case using IPv4.
 
+Wireguard creates a virtual interface on a node 
+across which a UDP VPN connects to other
+peers. The interface has a public and private key associated with it that
+are used for decrypting and encrypting the packets, respectively. 
+The link between one peer and another 
+is point to point. 
+We will be using the 10.8.0.0/24` subnet over `wg0` with the
+`central-node having address 10.8.0.1 and `gateway-node` having address
+10.8.0.2.
+
 ### Installing Wireguard and related packages
 
 Update/upgrade on both the gateway node and central node with:
@@ -318,14 +329,9 @@ following instructions are based on installing `resolvconf`:
 
 	sudo apt install resolvconf
 	
-### Configuring the Wireguard VPN
+### Wireguard commands
 
-Wireguard creates a virtual interface on a node 
-across which a UDP VPN connects to other
-peers. The interface has a public and private key associated with it that
-are used for decrypting and encrypting the packets, respectively. 
-The link between one peer and another 
-is point to point. Wireguard comes with two utilities:
+Wireguard comes with two utilities:
 
 - `wg`: the full command line utility for setting up a Wireguard interface.
 
@@ -336,11 +342,9 @@ The configuration file and public and private key files for the
 Wireguard are kept in the directory
 `/etc/wireguard`. 
 
-### Configuring the central node as a Wireguard peer
+### Generating public and private keys on both nodes
 
-#### Generating public and private keys 
-
-Starting on your central node, generate a private and public key using the 
+Starting on `central-node`, generate a private and public key using the 
 Wireguard `wg` command line utility:
 
 	wg genkey | sudo tee /etc/wireguard/private.key
@@ -358,39 +362,29 @@ Next, generate a public key from the private key as follows:
 This command first writes the private key from the file to `stdout`, then generates the public key with `wg pubkey`, then writes the public key to 
 `/etc/wireguard/public.key` and to the terminal. 
 
-#### Choosing an IP address range for your VPN subnet
+Now, switch to `gateway-node` and run the same commands. 
 
-The next step is to choose an IP address range for the VPN subnet on which
-your VPN nodes will run. You have a choice of three different ranges 
-having the following CIDRs, all private address space:
+### Creating the `wg0` interface configuration file on the `gateway-node`
 
-    10.0.0.0/8
-    172.16.0.0/12
-    192.168.0.0/16
-                                                                                                     	
-We'll use `10.8.0.0/24`, with the `central-node`
-having address `10.8.0.1` and `gateway-node` having `10.8.0.2`. 
-Note that these addresses are only
-the address of the Wireguard point to point VPN interface, and have nothing
-to do with the IP addresses of other interfaces in your gateway node or 
-central node.
-
-#### Creating the `wg0` interface configuration file on the central node
-
-The next step is to create a configuration file for the central node
-which acts as the Wireguard server. 
-Using your favorite editor, open a new file `/etc/wireguard/wg0.conf` 
-(running as `sudo`). Edit the file to insert the following configuration:
+Edit the file `/etc/wireguard/wg0.conf` as superuser:
 
 	[Interface]
-	PrivateKey = <insert private key of central node here>
-	Address = 10.8.0.1/24
+	PrivateKey = <insert gateway node private key here>
+	Address = 10.8.0.2/24
 	ListenPort = 51820
-	SaveConfig = true
 
-Save the file and exit the editor.
+	[Peer]
+	PublicKey = <insert central node public key here>
+	AllowedIPs = 10.8.0.0/24
+	Endpoint = <insert public IP address of your central node here>:51820
+	PersistentKeepalive = 21
 
-#### Installing a system service for the `wg0` interface
+Add the private key of the `gateway-node`, public key of `central-node`,
+and public IP address of `central-node` where indicated. The public
+IP address could also just be a DHCP address on the local subnet if
+you are using a local VM for the central node. Save the file and exit the editor.
+
+### Installing a system service for the `wg0` interface on `gateway-node`
 
 We'll use `systemctl` to create a service that creates and configures
 the Wireguard `wg0` interface when the node boots. To enable the system 
@@ -430,75 +424,43 @@ to see the service status. This should show something like:
 Notice that the status prints out the `ip` commands that were used to
 create the interface.
 
-### Configuring the gateway node as a Wireguard peer
+### Creating the `wg0` interface configuration file on the `central node`
 
-Next, we'll configure Wireguard on `gateway-node`. 
-
-#### Generating the public and private keys on the gateway node
-
-Follow the directions in the section above about how to generate the
-keys.
-
-#### Creating the `wg0` interface configuration file on the gateway node
-
-As on the central node, edit the file `/etc/wireguard/wg0.conf`:
+The next step is to create a configuration file for `central-node`.
+Using your favorite editor, open a new file `/etc/wireguard/wg0.conf` 
+(running as `sudo`). Edit the file to insert the following configuration:
 
 	[Interface]
-	PrivateKey = <insert gateway node private key here>
-	Address = 10.8.0.2/24
-
+	PrivateKey = <insert private key of central-node here>
+	Address = 10.8.0.1/24
+	ListenPort = 51820
+	
 	[Peer]
-	PublicKey = <insert central node public key here>
+	PublicKey = <insert gateway-node public key here>
 	AllowedIPs = 10.8.0.0/24
-	Endpoint = <insert public IP address of your central node here>:51820
+	Endpoint = <insert public IP address of gateway-node here>:51820
 	PersistentKeepalive = 21
 
-Add the private key of the `gateway-node`, public key of `central-node`,
-and public IP address of `central-node` where indicated. The public
+Add the private key of the `central-node`, public key of `gateway-node`,
+and public IP address of `gateway-node` where indicated. The public
 IP address could also just be a DHCP address on the local subnet if
-you are using a local VM for the central node. Save the file and exit the editor.
+you are using a local VM for both nodes. Save the file and exit the editor.
 
-### Adding the gateway node public key to the central node `wg0` interface
+### Installing a system service for the `wg0` interface on `central-node`
 
-On the `central-node`, run the following command:
+Follow the same instructions as above for installing a system service to bring
+up the `wg0` interface on the central node.
 
-	sudo wg set wg0 peer <insert gateway node public key here> allowed-ips 10.8.0.0/24
-	
-This enables the VPN to run any IP address in the `10.8.0.x` range, in
-case you want to add additional gateway nodes.
 
-Check the status of the tunnel:
+### Checking `wg0` status and bidirectional connectivity
+
+You can check the status of the `wg0`interface by running:
 
 	sudo wg
-	
-	interface: wg0
-	public key: EpaLTQqJTCvpf4cUMcFNWjy8BGszKwaGGHRIN0dCrEM=
-	private key: (hidden)
-	listening port: 51820
 
-	peer: j6wKBbuAFxwELVBgW+brAMDyWZ3JUseVcP+i+3IN2W8=
-		allowed ips: 10.8.0.0/24
-		
-In addition, edit the `/etc/wireguard/wg0.conf` file and add a section 
-for the gateway node at the end of the file with at least one blank line
-after the top section:
+on both nodes. It should print out something like:
 
-	[Peer]
-	PublicKey = <insert gateway node public key here>
-	AllowedIPs = 10.8.0.0/24
-	Endpoint = <insert public IP address of your gateway node here>:51820
-	PersistentKeepalive = 21
-
-This will ensure the connection comes up if `central-node` happens to 
-go down without saving the interface configuration.
-
-
-### Connecting the gateway node to the tunnel
-
-Follow the same steps as in the section on installing a system service on 
-the central node to start the system service on the gateway node.
-
-### Checking for bidirectional connectivity
+where the important point is that the keep-alive transfer is not showing zero.
 
 Check for bidirectional connectivity by pinging first on the central node:
 

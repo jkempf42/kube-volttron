@@ -287,6 +287,16 @@ on it so the module will be reloaded when the VM reboots.
 
 ## Installing and configuring the Wireguard VPN
 
+Wireguard creates a virtual interface on a node 
+across which a UDP VPN connects to other
+peers. The interface has a public and private key associated with it that
+are used for decrypting and encrypting the packets, respectively. 
+The link between one peer and another 
+is point to point. 
+We will be using the 10.8.0.0/24` subnet over `wg0` with the
+`central-node having address 10.8.0.1 and `gateway-node` having address
+10.8.0.2.
+
 Most of the pages with instructions for installing and configuring 
 Wireguard on the 
 Ubuntu 20.04 assume you want to deploy it as a VPN server and route through it 
@@ -303,16 +313,6 @@ a VPN server, and includes instructions for configuring with IPv6 which
 are nice if you have IPv6 available but only increase the complexity. Below,
 I've summarized the instructions for installing and configurating Wireguard
 specifically for the `kube-volttron` use case using IPv4.
-
-Wireguard creates a virtual interface on a node 
-across which a UDP VPN connects to other
-peers. The interface has a public and private key associated with it that
-are used for decrypting and encrypting the packets, respectively. 
-The link between one peer and another 
-is point to point. 
-We will be using the 10.8.0.0/24` subnet over `wg0` with the
-`central-node having address 10.8.0.1 and `gateway-node` having address
-10.8.0.2.
 
 ### Installing Wireguard and related packages
 

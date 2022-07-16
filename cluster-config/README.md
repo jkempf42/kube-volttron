@@ -642,8 +642,10 @@ you need to run the following as a regular user:
 	sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 	sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-Copy down the final `kubeadm join` command since we will use this shortly to
-join the gateway node to the central node control plane.
+Create a shell script file on `gateway-node` in `kube-volttron/cluster-config` called `join.sh`
+with the first line `#! /bin/bash` and copy final `kubeadm join` command into 
+it since we will use this shortly to
+join the `gateway-node` to the `central-node` control plane.
 
 #### Removing the taint on the control node prohibiting application workload deployment.
 

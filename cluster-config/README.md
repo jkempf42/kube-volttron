@@ -367,7 +367,9 @@ Now, switch to `gateway-node` and run the same commands.
 
 ### Creating the `wg0` interface configuration file on the `gateway-node`
 
-Edit the file `/etc/wireguard/wg0.conf` as superuser:
+The next step is to create a configuration file for `gateway-node`.
+Using your favorite editor, open a new file `/etc/wireguard/wg0.conf` 
+(running as `sudo`). Edit the file to insert the following configuration:
 
 	[Interface]
 	PrivateKey = <insert gateway node private key here>
@@ -387,9 +389,7 @@ you are using a local VM for the central node. Save the file and exit the editor
 
 ### Creating the `wg0` interface configuration file on the `central node`
 
-The next step is to create a configuration file for `central-node`.
-Using your favorite editor, open a new file `/etc/wireguard/wg0.conf` 
-(running as `sudo`). Edit the file to insert the following configuration:
+Edit the file `/etc/wireguard/wg0.conf` as superuser:
 
 	[Interface]
 	PrivateKey = <insert private key of central-node here>
@@ -409,8 +409,8 @@ you are using a local VM for both nodes. Save the file and exit the editor.
 
 ### Installing a system service for the `wg0` interface 
 
-Starting on `gateway-node`, we'll use `systemctl` to create a s
-ervice that creates and configures
+Starting on `gateway-node`, we'll use `systemctl` to create a system
+service that creates and configures
 the Wireguard `wg0` interface when the node boots. To enable the system 
 service, use:
 

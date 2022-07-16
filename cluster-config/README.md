@@ -423,7 +423,9 @@ to see the service status. This should show something like:
 	May 20 15:17:27 central-node systemd[1]: Finished WireGuard via wg-quick(8) for wg0.
 	
 Notice that the status prints out the `ip` commands that were used to
-create the interface.
+create the interface. You can also see the `wg0` interface using:
+
+	ip link
 
 ### Creating the `wg0` interface configuration file on the `central node`
 

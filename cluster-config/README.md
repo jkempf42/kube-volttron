@@ -305,8 +305,9 @@ services, in order to hide your local machine's or mobile phone's IP address.
 The result is that the web pages include instructions for configuring iptables
 to route packets out of the VM, which are completely unnecessary for the
 `kube-volttron` use case. 
-`kube-volttron` doesn't need this, since the only service the gateway nodes
-will be accessing is the Volttron Central service running on the central node. 
+`kube-volttron` doesn't need this, since we will be running the Kubernetes control
+and data plane traffic between nodes in the cluster and routes to other
+services on other nodes will be handled by Kubernetes. 
 The best guide I've found is at [this link](https://www.digitalocean.com/community/tutorials/how-to-set-up-wireguard-on-ubuntu-20-04). The author notes 
 where you can skip configuration instructions for deploying Wireguard as 
 a VPN server, and includes instructions for configuring with IPv6 which

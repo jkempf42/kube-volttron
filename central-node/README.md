@@ -18,25 +18,13 @@ You need to edit the file and replace the value of the
 `kubernetes.io/hostname` key which is`central-node` 
 with the hostname of your central node.
 
-- `vcentral-service.yml`: This defines a ClusterIP type service for vcentral, but
-with an external IP address so that you can access the Volttron Central 
-Web UI from a 
-browser running on the host for testing. You can find out the addresses on your host
-interface with `ifconfig`. You should replace the IP address in
-the manifest that is the array value of the key `externalIPs`, with an IP address of the central
-node machine on your local subnet. Don't use the loopback address (`127.0.0.1`) as the Deployment
-will get an error when it tries to deploy a pod. Also, don't use the address on `wg0`, `flannel.1`
-or `cni0` nor any of the `veth` interfaces since they are used by Kubenetes.
-The Volttron Central Web UI will run on the standard Volttron port,
-8443, on your host machine so be sure there is no other service running on
-that port. The service manifest also contains a port definition for the 
-VIP bus port at port number 22916 so the gateway pods can connect to
+- `vcentral-service.yml`: This defines a NodePort type service for the `vcentral` HTTP service at
+port 8443 and the VIP bus service at port number 22916 so the gateway pods can connect to
 the VIP bus (individual pods in a Kubernetes cluster have no access to a common Unix
-socket which is how agents typically communicate on the VIP bus). 
-
-- `vcentral-cloud-service.yml`: This defines a NodePort service for 
-`vcentral` and omits the `externalIPs` key since this service will be
-accessed through the Nginx reverse proxy.
+socket which is how agents typically communicate on the VIP bus). The Nginx reverse proxy
+forwards HTTP requests on port 80 of the global DNS name for the VM (if you are running
+`central-node` in a cloud) or the VM address (if you are running in a local VirtualBox
+VM). 
 
 ### Vcentral storage manifest
 
@@ -48,7 +36,7 @@ used because we want to mount a local directory, and the class name is `local-st
 - PersistentVolume: This type describes the path to the actual directory on the local node we 
 want to mount. It also needs to specify what node the directory is on in the `nodeAffinity` section. 
 Change the node name in the `matchExpressions:` `values:` section from
-`central-node` to the hostname of your central node. 
+`central-node` to the hostname of your central node if you changed it. 
 Note the `spec.persistentVolumeReclaimPolicy` is set to `Retain`
 indicating that the volume should be retained if the pod goes down, and the `storageClassName` indicates the name of the StorageClass type of the persistent volume, in this case `local-storage`.
 

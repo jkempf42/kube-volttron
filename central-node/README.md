@@ -120,7 +120,7 @@ which should show something like:
 	kubernetes   ClusterIP   10.96.0.1        <none>        443/TCP                          23h
 	vcentral     NodePort    10.110.166.233   <none>        8443:31776/TCP,22916:30777/TCP   15s
 	
-#### Deploying the `vcentral` deployment
+#### Creating the `vcentral` Deployment
 
 Finally, we can create the `vcentral` deployment:
 
@@ -138,46 +138,30 @@ which will follow progress on creating the pod:
 
 #### Testing the Volttron Central microservice web site
 
-Depending whether your `central-node` is running on a cloud or on a local
-VM, there are two ways to check the Volttron Central web site.
+You can test whether the deployment suceeded by running the following command on the `central-node`:
 
-##### `central-node` is running in a local VM
+	curl -k https://vcentral.default.svc.cluster.local:8443/index.html
 
-Type 
-`https://<host IP address>:8443/index.html` into the address bar of
-your browser running on the host where your central node VM is running. Your 
-browser will bring up a page indicating that the certificate may be 
-questionable, this is normal behavior because `vcentral` uses a self-signed
-certificate. Click on the *Advanced*->*Continue* button or however your
-browser designates it. This will bring up the Volttron Central admin 
-splash page.
+It should print out the HTML code for the Volttron Central administrative splash page.
 
-##### `central-node` is running in a cloud VM
+If you are running on a local VirtualBox VM, you should be able to get to the Volttron Central administrative
+configuration page by typing https://vcentral.default.svc.cluster.local:8443/index.html into the
+browser bar.
 
-On the `central-node` node, find out the NodePort address and port on which the `vcentral` service is
-deployed:
+#### Configuring Nginx to proxy the Volttron Central website through a cloud VM's DNS name
 
-	kubectl get endpoints | grep vcentral
-	vcentral    10.244.0.42:8443            10m
-	
-The endpoint address is where the Nginx proxy will forward request to.
+If you are running on a cloud VM, you now need to configure Nginx to proxy the Volttron
+Central website through the cloud VM's DNS name.
 
-Test the enpoint address using `curl` on the `central-node` node cloud VM:
-
-	curl -k https://<your NodePort IP address>:8443/index.html
-	
-You should get back some HTML code for the Volttron server page to
-set up authentication. You probably can't use a browser at this point because 
-you are running `ssh` remotely and have CLI access only.
-
-Next, `sudo` edit `/etc/nginx/nginx.conf` and comment out the line for 
+Edit `/etc/nginx/nginx.conf` as superuser and comment out the line for 
 sites enabled:
 
 	\# include /etc/nginx/sites-enabled/*;
 
 
 This ensures that the only pathnames will come from `conf.d`, which is
-where we will put the config file for `kube-volttron`.
+where we will put the config file for `kube-volttron`. Save the file and 
+exit.
 
 Edit the file `kube.conf` in this directory, replacing 
 `<your NodePort IP address>` with the `vcentral` NodePort 

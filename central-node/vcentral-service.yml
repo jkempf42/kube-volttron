@@ -6,7 +6,7 @@ metadata:
     version: v2
   name: vcentral
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: vcentral
   ports:

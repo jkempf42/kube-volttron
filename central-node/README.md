@@ -19,7 +19,7 @@ You need to edit the file and replace the value of the
 with the hostname of your central node.
 
 - `vcentral-service.yml`: This defines a NodePort type service for the `vcentral` HTTP service at
-port 8443 and the VIP bus service at port number 22916 so the gateway pods can connect to
+port 8443 and the VIP bus service at port 22916 so the gateway pods can connect to
 the VIP bus (individual pods in a Kubernetes cluster have no access to a common Unix
 socket which is how agents typically communicate on the VIP bus). The Nginx reverse proxy
 forwards HTTP requests on port 80 of the global DNS name for the VM (if you are running

@@ -163,19 +163,11 @@ This ensures that the only pathnames will come from `conf.d`, which is
 where we will put the config file for `kube-volttron`. Save the file and 
 exit.
 
-Edit the file `kube.conf` in this directory, replacing 
-`<your NodePort IP address>` with the `vcentral` NodePort 
-endpoint IP address 
-found from using `kubectl` above. Copy the file into the Nginx 
+Copy the file `kube.conf` from this directory into the Nginx 
 configuration directory:
 
 
 	sudo cp kube.conf /etc/nginx/conf.d
-
-Note: Kubernetes resets the endpoint address if you stop and restart the VM
-or if you redeploy the service. Make sure to check the endpoint address when 
-you stop and restart the VM and change the address in the config file if  
-it has changed.
 
 Reload Nginx with:
 

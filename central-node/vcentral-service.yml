@@ -17,5 +17,3 @@ spec:
     - name: vip
       port: 22916
       protocol: TCP
-  externalIPs:
-    - 192.168.0.128

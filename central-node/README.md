@@ -46,7 +46,7 @@ the `storageClassName`, again, `local-storage`. The `accessModes`
 array is set to `ReadWriteOnce` indicating that
 only one pod at a time can read and write to the volume.
 
-## Preparing the node for vcentral deployment
+## Preparing the `central-node` for `vcentral` deployment
 
 We use node labels to restrict the deployment of the `vcentral` microservice to the control node. `Kubeadm` adds a label
 with the hostname, having key `kubernetes.io/hostname`. Check whether that label is present on the central node:
@@ -159,7 +159,7 @@ sites enabled:
 	\# include /etc/nginx/sites-enabled/*;
 
 
-This ensures that the only pathnames will come from `conf.d`, which is
+This ensures that the only pathnames will come from `/etc/nginx/conf.d`, which is
 where we will put the config file for `kube-volttron`. Save the file and 
 exit.
 
@@ -187,7 +187,7 @@ bar. When accessing the Website over the Internet, you need to use
 
 Note that using the global DNS name may not work from the `central-node`
 VM running in the cloud, but you can always use the service name 
-directly if you want to access it from outside the cluster.
+directly if you want to access it from outside the cluster on `central-node`.
 
 #### Configuring passwords in the Volttron Central admin page and viewing the dashboard
 

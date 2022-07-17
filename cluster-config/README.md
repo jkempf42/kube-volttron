@@ -929,13 +929,13 @@ when trying to `exec` into a pod using `kubectl`.
 First step is to edit the `kubelet` file in this directory and 
 replace `10.8.0.2` with 
 the IP address of your `wg0` interface if you changed it 
-then copy the file into `/etc/default`. The arguments are 
+then copy the file into `/etc/default` as superuser. The arguments are 
 added to the startup command for the `kubelet` 
 by the `systemd` unit file and will cause the `kubelet` to report that 
 the IP address of the node is the same as the `wg0` interface rather than 
 that of a default interface like `enp0s3`.
 
-Second step is to edit the file `/var/lib/kubelet/config.yaml` and 
+Second step is to edit the file `/var/lib/kubelet/config.yaml` as superuser and 
 add a line after the `apiVersion:` line with the `address:` key and `wg0`
 IP address as the value, for example:
 

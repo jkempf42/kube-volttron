@@ -907,7 +907,7 @@ If you don't have the value of `--discovery-token-ca-cert-hash` you can find by 
 	
 Finally, to use `kubectl` on the gateway node to deploy pods, you need
 to copy the `config` file from your `~/.kube` directory 
-over from the control node to the gateway node. 
+over from the `central-node` to the `gateway-node`. 
 Also copy the file into `/etc/kubernetes/admin.conf` as root on the 
 gateway node so other users have access to it.
 

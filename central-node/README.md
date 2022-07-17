@@ -68,6 +68,8 @@ and change the permissions so anyone can read/write it:
 	
 ### Deploying the `vcentral` microservice with storage
 
+Change to the `central-node` directory.
+
 #### Deploying the persistent storage objects
 
 The persistent storage objects are deployed with:

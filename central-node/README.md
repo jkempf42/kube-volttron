@@ -9,7 +9,7 @@ your central node VM.
 
 ### Vcentral service manifests
 
-The `vcentral` services manifests are contained in the following three yaml files: 
+The `vcentral` service manifests are contained in the following two yaml files: 
 
 - `vcentral-deploy.yml`: This sets up a Kubernetes Deployment for a vcentral Volttron Central microservice with an 
 SQL Lite historian mounted to the VM's file system so the data survives the
@@ -18,13 +18,13 @@ You need to edit the file and replace the value of the
 `kubernetes.io/hostname` key which is`central-node` 
 with the hostname of your central node.
 
-- `vcentral-service.yml`: This defines a NodePort type service for the `vcentral` HTTP service at
-port 8443 and the VIP bus service at port 22916 so the gateway pods can connect to
-the VIP bus (individual pods in a Kubernetes cluster have no access to a common Unix
-socket which is how agents typically communicate on the VIP bus). The Nginx reverse proxy
-forwards HTTP requests on port 80 of the global DNS name for the VM (if you are running
-`central-node` in a cloud) or the VM address (if you are running in a local VirtualBox
-VM). 
+- `vcentral-service.yml`: This defines a NodePort type Service for the `vcentral` HTTP service at
+port 8443 and the VIP bus service at port 22916. The Nginx reverse proxy
+forwards HTTP requests on port 80 of the global DNS name for the VM to port 8443 if you are running
+`central-node` in a cloud, or you can access the service directly at port 8443 
+if you are running in a local VirtualBox
+VM. The VIP bus service allows the `gateway-node` pod to connect
+with the VIP bus in the `central-node` pod. 
 
 ### Vcentral storage manifest
 
@@ -178,20 +178,16 @@ It should not print anything out if your edits were correct.
 Finally, you can check if the Volttron Central website is accessable 
 from the Internet by browsing to it using the VM's DNS name..
 On Azure, the DNS name for your VM is on the VM *Overview* page. 
-Copy it and use 
-`curl` to check on the website:
 
-	curl -k http://<DNS name for VM>/index.html
-	
-As above, it should print out the Adminstrative web site configuration splash
-page HTML.You can then use your browser to access the 
-Volttron Central website by 
+You can then use a browser from the gateway node or a laptop to access the 
+Volttron Central website over the Internet by 
 typing `http://<DNS name for VM>/index.html` into the browser address
-bar.
-
-Note that when accessing the Website over the Internet, you need to use 
+bar. When accessing the Website over the Internet, you need to use 
 `http` and not `https` because the port opened on the firewall was port 80.
 
+Note that using the global DNS name may not work from the `central-node`
+VM running in the cloud, but you can always use the service name 
+directly if you want to access it from outside the cluster.
 
 #### Configuring passwords in the Volttron Central admin page and viewing the dashboard
 

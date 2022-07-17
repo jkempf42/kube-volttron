@@ -79,14 +79,23 @@ The persistent storage objects are deployed with:
 then check whether the objects have been created:
 
 	kubectl get storageclass
+
+which should show something like:
+
 	NAME                     PROVISIONER                    RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 	volttron-local-storage   kubernetes.io/no-provisioner   Delete          WaitForFirstConsumer   false                  21m
 	
 	kubectl get persistentVolume
+
+which should show something like:
+
 	NAME          CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS             REASON   AGE
 	vcentral-pv   500Mi      RWO            Retain           Available           volttron-local-storage            56s
 	
 	kubectl get persistentVolumeClaim
+	
+which should show something like:
+
 	NAME             STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS             AGE
 	vcentral-claim   Pending                                      volttron-local-storage   69s
 
@@ -100,13 +109,13 @@ and you can check whether they have been deployed with:
 
 
 	kubectl get service
-	NAME         TYPE        CLUSTER-IP      EXTERNAL-IP     PORT(S)              AGE
-	kubernetes   ClusterIP   10.96.0.1       <none>          443/TCP              19h
-	vcentral     ClusterIP   10.105.192.93   192.168.0.129   8443/TCP,22916/TCP   5s
-	
-If you are deploying to a cloud VM, the `vcentral` service type will show
-up as `NodePort` and there will be no external IP showing.
 
+which should show something like:
+
+	NAME         TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                          AGE
+	kubernetes   ClusterIP   10.96.0.1        <none>        443/TCP                          23h
+	vcentral     NodePort    10.110.166.233   <none>        8443:31776/TCP,22916:30777/TCP   15s
+	
 #### Deploying the `vcentral` deployment
 
 Finally, we can create the `vcentral` deployment:

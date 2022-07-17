@@ -206,7 +206,7 @@ on the same site local network, then the IP address should be the address on
 the interface with the smallest number as the last character in it's name, for
 example `enp0s3`. You can use `ip address` to find it. 
 
-If the `central-node is running on a cloud VM, the public IP address should be on
+If the `central-node` is running on a cloud VM, the public IP address should be on
 the dashboard for the VM. For example, in Azure, it is located in a field
 with title *Public IP address:*. The public address of the `gateway-node`
 depends on whether you are running in a corporate LAN or accessing the

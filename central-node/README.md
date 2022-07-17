@@ -84,14 +84,18 @@ which should show something like:
 
 	NAME                     PROVISIONER                    RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
 	volttron-local-storage   kubernetes.io/no-provisioner   Delete          WaitForFirstConsumer   false                  21m
-	
+
+Check for the PersistentVolume:
+
 	kubectl get persistentVolume
 
 which should show something like:
 
 	NAME          CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS      CLAIM   STORAGECLASS             REASON   AGE
 	vcentral-pv   500Mi      RWO            Retain           Available           volttron-local-storage            56s
-	
+
+Check for the PersistentVolumeClaim:
+
 	kubectl get persistentVolumeClaim
 	
 which should show something like:

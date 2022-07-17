@@ -1062,6 +1062,19 @@ and you should get output like this:
 	
 Your cluster should now be ready to deploy the microservice Volttron services!
 
+## Rebooting the cluster after shutting down the cloud VM
+
+Because the `dnsmasq.service` and `nginx.service` start before the cluster processes boot, the `dnsmasq` is not able to resolve any names 
+within the cluster for `nginx` and so the Nginx service fails to start and `dnsmasq` fails to connect with the CoreDNS server in the cluster. 
+To fix this, you need to first re-enable `dnsmasq`, then `nginx` after the `central-node` VM is restarted. You can do that by running:
+
+	sudo systemctl restart dnsmasq.service
+	
+then:
+
+	sudo systemctl restart nginx.service
+	
+and check them by running `systemctl status <service unit>`. 
 
 ## Troubleshooting
 

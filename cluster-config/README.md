@@ -654,7 +654,7 @@ installs a container runtime socket in the right place. This has the
 added advantage of installing the default `systemd` 
 [cgroup driver](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/configure-cgroup-driver/).
 
-#### Check whether the nodes have Kubernetes `apt` repo access
+#### Establishing Kubernetes `apt` repo access on the nodes
 
 Check whether you already have access to the Kubernetes repository with:
 
@@ -689,7 +689,8 @@ To install the Kubernetes utilities and `kubeadm` type the following commands:
 	sudo apt-get install -y kubelet kubeadm kubectl
 	sudo apt-mark hold kubelet kubeadm kubectl
 
-This installs `kubelet` as a `systemd` service and marks the Kubernetes 
+This installs `kubectl`, `kubeadm, and `kubelet`,
+and starts `kubelet` as a `systemd` service. It also marks the Kubernetes 
 utilites so that they are not automatically updated. The `kubelet` on
 the `gateway-node` will need some configuration but we need to configure it
 after the gateway node has joined the cluster.
@@ -724,6 +725,11 @@ node.
 - The `containerd` socket should be specified using the argument 
 `--cri-socket=unix:///var/run/containerd/containerd.sock` in case
 there are any other container runtime sockets lying about.
+
+Note that if you think you may later want to turn the cluster into an HA cluster 
+with multiple control plane nodes and a cloud provider load balancer, you should also 
+include the --control-plane-endpoint parameter as described [here](https://medium.com/r/?url=https%3A%2F%2Fkubernetes.io%2Fdocs%2Fsetup%2Fproduction-environment%2Ftools%2Fkubeadm%2Fcreate-cluster-kubeadm%2F%23considerations-about-apiserver-advertise-address-and-controlplaneendpoint)
+since it is not possible to configure a cluster HA unless the control plane IP address is specified when the cluster is created.
 
 Run `kubeadm init` on the central node:
 

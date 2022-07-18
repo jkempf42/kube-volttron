@@ -914,13 +914,13 @@ If you don't have the value of `--discovery-token-ca-cert-hash` you can find by 
 	
 Finally, to use `kubectl` on the gateway node to deploy pods, you need
 to copy the `config` file from your `~/.kube` directory 
-over from the `central-node` to the `gateway-node`. 
+on `central-node` to `gateway-node`. 
 Also copy the file into `/etc/kubernetes/admin.conf` as root on the 
 gateway node so other users have access to it.
 
 #### Reinitializing the `kubelet` on `gateway-node` with the `wg0` IP address
 
-The `kubeadm join` command uses the first interface on the node to 
+Like Flannel, the `kubeadm join` command uses the first nonloopback interface on the node to 
 to determine the Node object's public IP address. This address is then
 used to start the `kubelet` which acts as the local node manager.
 Since `wg0` is not the 

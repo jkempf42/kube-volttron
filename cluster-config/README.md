@@ -243,9 +243,10 @@ then use `systemctl` to  disable it:
 If you are on a 
 corporate LAN, check with your security people if there is a corporate 
 firewall and, if so, you should request that the Wireguard port and the
-HTTP port be opened. If either or both of your VMs are directly connected
+HTTP port be opened. If either or both of your VMs are 
+on a host that is directly connected
 to the Internet, then by all means, start a firewall and configure 
-the two ports to be opened directly on the VM! 
+the Wireguard port to be opened directly on the host! 
 
 ### Setting the host names
 
@@ -634,6 +635,11 @@ Clone this github repo (`kempf42/kube-volttron`) and perform the following steps
 
 #### Installing the `containerd` container runtime package and configuring a system service
 
+Kubernetes no longer uses Docker as the default container runtime and, as a practical matter, 
+installation and configuration of Docker for Kubernetes is now difficult. Instead, the default 
+container runtime is `containerd` which is a CNCF project. Docker is still great for container 
+development however.
+
 Instructions for installing the latest version of `containerd` and 
 configuring can be found 
 [here](https://github.com/containerd/containerd/blob/main/docs/getting-started.md),
@@ -642,16 +648,15 @@ path of installing the `apt` package:
 
 	sudo apt install containerd
 	
-This will install the package and configure and a `systemd` service
-with properly formatted unit file, start the service, and
-install a container runtime socket in the right place, which has the
+This will install the package and configure a `systemd` service
+with properly formatted unit file, and start the service, which
+installs a container runtime socket in the right place. This has the
 added advantage of installing the default `systemd` 
 [cgroup driver](https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/configure-cgroup-driver/).
 
-#### Check whether the nodes have the Kubernetes `apt` repo.
+#### Check whether the nodes have Kubernetes `apt` repo access
 
-The next step is to install `kubeadm`, `kubelet`, and `kubectl` on both
-nodes. First check whether you already have access to the repository with:
+Check whether you already have access to the Kubernetes repository with:
 
 	sudo apt policy | grep kubernetes
 	
@@ -661,7 +666,7 @@ If you see something like:
      release o=kubernetes-xenial,a=kubernetes-xenial,n=kubernetes-xenial,l=kubernetes-xenial,c=main,b=amd64
      origin apt.kubernetes.io
 
-Skip forward to the next section. If not, then do the following.
+Skip forward to the next section. If not, do the following.
 
 Update the `apt` package index and install packages needed to use the Kubernetes apt repository:
 
@@ -689,23 +694,23 @@ utilites so that they are not automatically updated. The `kubelet` on
 the `gateway-node` will need some configuration but we need to configure it
 after the gateway node has joined the cluster.
 
-Note that if the installtion suggests you install any firewall packages, 
-don't install them since this will considerably complicate the cluster
-connectivity. If you followed the directions above on firewalls, you should
-already have a firewall installed, running, and configured if your host
-is connected directly to the Internet.
+Note that if the installation suggests you install any firewall packages, 
+don't install them since local firewalls will considerably complicate the cluster 
+connectivity as discussed above. If your host is connected directly to the Internet 
+and you followed the directions above on firewalls, you should already have a 
+firewall installed, running, and configured.
 
 ## Creating a cluster with `kubedm`
 
 ### Installing `central-node` as a control node
 
-First step is to run `kubeadm` with arguments specific to configuring 
+We first need to run `kubeadm` on `central-node` with arguments specific to configuring 
 `central-node` as a control node
 The following arguments need to be set:
 
 - Since we are using Flannel, we need to reserve the pod CIDR using 
 `--pod-network-cidr=10.244.0.0/16`. This reserves
-IP address space for the inter-pod, intra-cluster network.
+IP address space for the intra-cluster, inter-pod network.
 
 - We need to advertise the API server 
 on the `wg0` interface so all
@@ -716,7 +721,7 @@ then use `--apiserver-advertise-address=10.8.0.1`, otherwise,
 substitute the address you assigned to the `wg0` interface on the central
 node.
 
--- The `containerd` socket should be specified using the argument 
+- The `containerd` socket should be specified using the argument 
 `--cri-socket=unix:///var/run/containerd/containerd.sock` in case
 there are any other container runtime sockets lying about.
 
@@ -737,11 +742,13 @@ When `kubeadm` is finished, it will print out:
 
 	kubeadm join <control-plane-host>:<control-plane-port> --token <token> --discovery-token-ca-cert-hash sha256:<hash>
 
+Note that <control-plane-host> will be the IP address of the primary interface on your cloud VM, an address in a private IP address space on the cloud provider's virtual private cloud network. It will not be the `wg0` interface IP address. Even though the cloud VM's IP network and your site local network connected to the local VM are in completely separate routing domains, they have a route between them through the `wg0` interface.
+
 Since we will use the `kubeadm join` shortly to
 join the `gateway-node` to the `central-node` control plane,
 create a shell script file on `gateway-node` in `kube-volttron/cluster-config` called `join.sh`
 with the first line `#! /bin/bash` and copy the `kubeadm join` command into 
-it. Add `--cri-socket=unix:///var/run/containerd/containerd.sock` at the end of the second line, save and exit the editor
+it. Add `--cri-socket=unix:///var/run/containerd/containerd.sock` at the end of the second line, save and exit the editor.
 Make the file executable
 with `chmod a+x join.sh` so it can run as a shell script.
 
@@ -751,6 +758,8 @@ you need to run the following as a regular user:
 	mkdir -p $HOME/.kube
 	sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 	sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+This creates a subdirectory in your home directory called `.kube` and copies the cluster configuration file into it.
 
 #### Removing the taints on the control node prohibiting application workload deployment.
 

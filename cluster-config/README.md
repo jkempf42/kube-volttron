@@ -266,7 +266,7 @@ effect.
 
 You should also install your favorite editor if it isn't there, and packages containing network debugging tools including `net-tools` and `inetutils-traceroute` (for `ifconfig` and `traceroute`) just in case you need them.
 
-### Ensuring the VMs have unique MAC addresses and ports for Kubernetes are open
+### Ensuring the VMs have unique MAC addresses
 
 Kubenetes uses the hardware MAC addresses and machine id to identify
 pods. Use the following to ensure that the two nodes have unique 
@@ -275,10 +275,6 @@ MAC addresses and machine ids:
 - Get the MAC address of the network interfaces using the command `ip link` or `ifconfig -a`,
 - Check the product\_uuid by using the command `sudo cat /sys/class/dmi/id/product_uuid`.
 
-Kubernetes also needs specific ports to be free, see [here](https://kubernetes.io/docs/reference/ports-and-protocols/) for list. You can check which ports are
-being used with:
-
-	sudo ss -lntp
 	
 ### Turning off swap
 
@@ -291,13 +287,13 @@ Next, turn off swap on the VMs:
 
 Next, we need to enable routing on both nodes by `sudo` editing
 `/etc/sysctl.conf` and deleting the `#` character at the beginning of the lines with `net.ipv4.ip_forward=1` and 
-`net.ipv6.conf.all.forwarding=1` to enable routing on the host after reboot, if they aren't already.
+`net.ipv6.conf.all.forwarding=1`. This enables routing on the VMs after reboot.
 
 Then use the command:
 
 	sudo sysctl <routing variable>=1
 
-where `<routing variable>` is  `net.ipv4.ip_forward` and `net.ipv6.conf.all.forwarding` to enable routing in the running host.
+where `<routing variable>` is  `net.ipv4.ip_forward` and `net.ipv6.conf.all.forwarding` to enable routing in the running VMs.
 
 You can test whether your configuration has worked by running:
 
@@ -310,7 +306,7 @@ Finally, enable the bridge net filter driver `br_netfilter`:
 	sudo modprobe br_netfilter
 	
 Edit the file `/etc/modules` as superuser and add a line with `br_netfilter` 
-on it so the module will be reloaded when the VM reboots.
+on it so the module will be reloaded when the VMs reboot.
 
 ## Fixing DNS on `central-node` so that it can resolve service/host names in the cluster
 
@@ -414,9 +410,11 @@ Wireguard creates a virtual interface on a node
 across which a UDP VPN connects to other
 peers. The interface has a public and private key associated with it that
 are used for decrypting and encrypting the packets, respectively. 
+The interface is locked to the public IP address of the other node, 
+and the IP address of the interface must be within a particular CIDR subnet.
 The link between one peer and another 
 is point to point. 
-We will be using the 10.8.0.0/24 subnet over `wg0` with the
+We will be using the 10.8.0.0/24 CIDR subnet over `wg0` with the
 `central-node` having address 10.8.0.1 and `gateway-node` having address
 10.8.0.2.
 
@@ -483,7 +481,7 @@ Next, generate a public key from the private key as follows:
 
 	sudo cat /etc/wireguard/private.key | wg pubkey | sudo tee /etc/wireguard/public.key
 	
-This command first writes the private key from the file to `stdout`, then generates the public key with `wg pubkey`, then writes the public key to 
+This command first writes the private key from the file to `stdout`, generates the public key with `wg pubkey`, then writes the public key to 
 `/etc/wireguard/public.key` and to the terminal. 
 
 Now, switch to `gateway-node` and run the same commands. 
@@ -532,7 +530,7 @@ you are using a local VM for both nodes. Save the file and exit the editor.
 
 ### Installing a system service for the `wg0` interface 
 
-Starting on `gateway-node`, we'll use `systemctl` to create a system
+Starting on `gateway-node`, we'll use `systemctl` to install a system
 service that creates and configures
 the Wireguard `wg0` interface when the node boots. To enable the system 
 service, use:
@@ -590,13 +588,13 @@ on both nodes. It should print out something like:
 	listening port: 51820
 
 	peer: V7EWFuM1qARFs1ldwCx2P6HOMcTMU5yY51QSw4t5gCI=
-  	  endpoint: 20.94.218.214:51820
+  	  endpoint: <public IP address of cloud or local VM>
 	  allowed ips: 10.8.0.0/24
 	  latest handshake: 1 minute, 42 seconds ago
 	  transfer: 1.29 KiB received, 4.72 KiB sent
 	  persistent keepalive: every 21 seconds
 
-where the important point is that the keep-alive transfer is not showing zero.
+where the important information is that the keep-alive transfer is not showing zero.
 
 Check for bidirectional connectivity by pinging first on the central node:
 

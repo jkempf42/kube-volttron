@@ -435,7 +435,7 @@ The best guide I've found is at [this link](https://www.digitalocean.com/communi
 where you can skip configuration instructions for deploying Wireguard as 
 a VPN server, and includes instructions for configuring with IPv6 which
 are nice if you have IPv6 available but only increase the complexity. Below,
-I've summarized the instructions for installing and configurating Wireguard
+I've summarized the instructions for installing and configuring Wireguard
 specifically for the `kube-volttron` use case using IPv4.
 
 ### Installing Wireguard and related packages

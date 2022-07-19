@@ -190,9 +190,7 @@ Use the instructions [here](https://docs.nginx.com/nginx/admin-guide/installing-
 install Nginx Plus if you want, but these instructions were developed with
 open source Nginx.
 
-Note that you can't configure Nginx yet because you need to know the IP
-address and port of the NodePort service `vcentral` will be using, which
-will come when we install `vcentral`.
+We'll configure Nginx after the `vcentral` service is installed. The instructions are in [`../central-node/README.md`](../central-node/README.md).
 
 ## Configuring both VMs for the Kubernetes cluster
 

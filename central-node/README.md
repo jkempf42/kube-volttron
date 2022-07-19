@@ -136,18 +136,6 @@ which will follow progress on creating the pod:
 	vcentral-55f7968955-x54jq   0/1     ContainerCreating   0          26s
 	vcentral-55f7968955-x54jq   1/1     Running             0          89s
 
-#### Testing the Volttron Central microservice web site
-
-You can test whether the deployment suceeded by running the following command on the `central-node`:
-
-	curl -k https://vcentral.default.svc.cluster.local:8443/index.html
-
-It should print out the HTML code for the Volttron Central administrative splash page.
-
-If you are running on a local VirtualBox VM, you should be able to get to the Volttron Central administrative
-configuration page by typing https://vcentral.default.svc.cluster.local:8443/index.html into the
-browser bar.
-
 #### Configuring Nginx to proxy the Volttron Central website through a cloud VM's DNS name
 
 If you are running on a cloud VM, you now need to configure Nginx to proxy the Volttron
@@ -175,21 +163,61 @@ Reload Nginx with:
 	
 It should not print anything out if your edits were correct.
 
-Finally, you can check if the Volttron Central website is accessable 
-from the Internet by browsing to it using the VM's DNS name..
-On Azure, the DNS name for your VM is on the VM *Overview* page. 
 
-You can then use a browser from the gateway node or a laptop to access the 
+#### Creating a system service to restart dnsmasq and Nginx after `vcentral` is running
+
+If your `central-node` VM is running in a cloud, you may want to shut
+it down periodically to save cost or for other reasons then boot it up
+again when you need it. Because `systemd` does not sychronize starting 
+`dnsmasq.service` and `nginx.service` with the Kubernetes cluster, if
+the CoreDNS pods are not running when `dnsmasq` boots, 
+`dnsmasq` won't be able to resolve 
+any names within the cluster for `nginx` and so the Nginx service fails to 
+start when it checks for `vcentral` site to proxy, and `dnsmasq` fails to 
+connect with the CoreDNS pods in the cluster. 
+
+To fix this, we define a `systemd` service, `restart-nginx-dnsmasq.service` 
+in the file by that name in this directory. The service starts up the
+shell script in `restart-nginx-dnsmasq.sh`. This shell script does the
+following:
+
+- Checks if Nginx has been configured to proxy requests to `vcentral`,
+
+- Waits until the `vcentral` service is running,
+
+- Restarts `dnsmasq.service` and `nginx.service`. 
+
+To 
+
+## Testing the `vcentral` deployment
+
+
+### Checking if the Volttron Central microservice web site is up
+
+If `central-node` is running on a cloud VM, you can test whether the deployment suceeded by running the following command from the `ssh` command line:
+
+	curl -k https://vcentral.default.svc.cluster.local:8443/index.html
+
+It should print out the HTML code for the Volttron Central administrative splash page.Note 
+that using the VM's global DNS name may not work from 
+the VM itself, but you can always use the service name 
+directly if you want to access it from outside the cluster on `central-node`.
+
+If `central-node` is  running on a local VirtualBox VM, you should be able to get to the Volttron Central administrative
+configuration page by typing https://vcentral.default.svc.cluster.local:8443/index.html into the
+browser URL bar of a browser running on the local VM. Note that `dnsmasq` does not export 
+the name to any nodes
+outside the local VM itself, so you will have to use a browser on the local VM to access it.
+
+If the `central-node` is running in a cloud VM, find its DNS name. On Azure, the DNS name 
+for your VM is on the VM *Overview* page.  You can then use a browser from the `gateway-node`
+host or a laptop to access the 
 Volttron Central website over the Internet by 
 typing `http://<DNS name for VM>/index.html` into the browser address
 bar. When accessing the Website over the Internet, you need to use 
-`http` and not `https` because the port opened on the firewall was port 80.
+`http` and not `https` because the port opened on the firewall is port 80.
 
-Note that using the global DNS name may not work from the `central-node`
-VM running in the cloud, but you can always use the service name 
-directly if you want to access it from outside the cluster on `central-node`.
-
-#### Configuring passwords in the Volttron Central admin page and viewing the dashboard
+### Configuring passwords in the Volttron Central admin page and viewing the dashboard
 
 The Volttron Central admin splash page looks like:
 
@@ -203,10 +231,11 @@ config page, where you can set the admin username and password:
 After filling in the admin username and password, click *Set Master Password* and you should see the admin login page come up.
 
 You can view the Volttron Central dashboard web app by browsing to the URL 
-`https://<web address>/vc/index.html`, where `<web address>` is either
-of the two addresses in the previous two sections depending on which
-central node deployment you used. This will bring up the Volttron 
-Central dashboard login page:
+`https://<site host>/vc/index.html`, where `<site host>` is either
+`vcentral.default.svc.cluster.local` if your `central-node` is in a local VM or
+`<DNS name for VM>` if your `central-node` is in a cloud VM. 
+
+This will bring up the Volttron Central dashboard login page:
 
 ![Volttron Central login page](image/vc-login.png)
 

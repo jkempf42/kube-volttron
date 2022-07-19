@@ -767,11 +767,11 @@ you need to run the following as a regular user:
 
 This creates a subdirectory in your home directory called `.kube` and copies the cluster configuration file into it.
 
-#### Removing the taints on the control node prohibiting application workload deployment.
+#### Removing the taints on the `central-node` prohibiting application workload deployment.
 
 As installed out of the box, `kubeadm` places taints on the control node
 disallowing deployment of application workloads. Since we want to deploy the
-Volttron Central pod `vcentral` there, we need to remove the taints:
+Volttron Central pod `vcentral` on `control-node`, we need to remove the taints:
 
 	kubectl taint node <central node hostname> node-role.kubernetes.io/master-
 	
@@ -1074,20 +1074,6 @@ and you should get output like this:
 	kube-flannel-ds-mqbt7   1/1     Running   1 (24h ago)   24h   10.8.0.2   gateway-node2   <none>           <none>
 	
 Your cluster should now be ready to deploy the microservice Volttron services!
-
-## Rebooting the cluster after shutting down the cloud VM
-
-Because the `dnsmasq.service` and `nginx.service` start before the cluster processes boot, the `dnsmasq` is not able to resolve any names 
-within the cluster for `nginx` and so the Nginx service fails to start and `dnsmasq` fails to connect with the CoreDNS server in the cluster. 
-To fix this, you need to first re-enable `dnsmasq`, then `nginx` after the `central-node` VM is restarted. You can do that by running:
-
-	sudo systemctl restart dnsmasq.service
-	
-then:
-
-	sudo systemctl restart nginx.service
-	
-and check them by running `systemctl status <service unit>`. 
 
 ## Troubleshooting
 

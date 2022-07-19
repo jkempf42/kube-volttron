@@ -1,0 +1,9 @@
+[Unit]
+Description=Restart dnsmasq and nginx when the CoreDNS server in the Kubernetes cluster has booted.
+After=network.service kubelet.service dnsmasq.service
+
+[Service]
+ExecStart=/usr/local/bin/restart-nginx-dnsmasq.sh
+
+[Install]
+WantedBy=multi-user.target

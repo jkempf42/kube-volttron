@@ -20,9 +20,8 @@ with the hostname of your central node.
 
 - `vcentral-service.yml`: This defines a NodePort type Service for the `vcentral` HTTP service at
 port 8443 and the VIP bus service at port 22916. The Nginx reverse proxy
-forwards HTTP requests on port 80 of the global DNS name for the VM to port 8443 if you are running
-`central-node` in a cloud, or you can access the service directly at port 8443 
-if you are running in a local VirtualBox
+forwards HTTP requests on port 80 of the global DNS name for the VM to port 8443, or you can access the service directly at port 8443 
+if on your local VirtualBox
 VM. The VIP bus service allows the `gateway-node` pod to connect
 with the VIP bus in the `central-node` pod. 
 
@@ -135,11 +134,18 @@ which will follow progress on creating the pod:
 	NAME                        READY   STATUS              RESTARTS   AGE
 	vcentral-55f7968955-x54jq   0/1     ContainerCreating   0          26s
 	vcentral-55f7968955-x54jq   1/1     Running             0          89s
+	
+You can quickly test whether the deployment suceeded by running the following command from the command line on `central-node`:
+
+	curl -k https://vcentral.default.svc.cluster.local:8443/index.html
+
+It should print out the HTML code for the Volttron Central administrative splash page.
 
 #### Configuring Nginx to proxy the Volttron Central website through a cloud VM's DNS name
 
-If you are running on a cloud VM, you now need to configure Nginx to proxy the Volttron
-Central website through the cloud VM's DNS name.
+You now need to configure Nginx to proxy the Volttron Central website through the cloud VM's DNS name if `central-node` is deployed to
+a cloud VM. If `central-node` is deployed to a local VirtualBox VM, you will still need to configure Nginx if you want to access the
+Volttron Central website outside of the `central-node` VM. 
 
 Edit `/etc/nginx/nginx.conf` as superuser and comment out the line for 
 sites enabled:
@@ -163,7 +169,6 @@ Reload Nginx with:
 	
 It should not print anything out if your edits were correct.
 
-
 #### Creating a system service to restart dnsmasq and Nginx after `vcentral` is running
 
 If your `central-node` VM is running in a cloud, you may want to shut
@@ -185,29 +190,18 @@ following:
 
 - Waits until the `vcentral` service is running,
 
-- Restarts `dnsmasq.service` and `nginx.service`. 
-
-To 
+- Restarts `dnsmasq.service` and `nginx.service` and exits.
 
 ## Testing the `vcentral` deployment
 
-
 ### Checking if the Volttron Central microservice web site is up
-
-If `central-node` is running on a cloud VM, you can test whether the deployment suceeded by running the following command from the `ssh` command line:
-
-	curl -k https://vcentral.default.svc.cluster.local:8443/index.html
-
-It should print out the HTML code for the Volttron Central administrative splash page.Note 
-that using the VM's global DNS name may not work from 
-the VM itself, but you can always use the service name 
-directly if you want to access it from outside the cluster on `central-node`.
 
 If `central-node` is  running on a local VirtualBox VM, you should be able to get to the Volttron Central administrative
 configuration page by typing https://vcentral.default.svc.cluster.local:8443/index.html into the
 browser URL bar of a browser running on the local VM. Note that `dnsmasq` does not export 
-the name to any nodes
-outside the local VM itself, so you will have to use a browser on the local VM to access it.
+the name to any nodes outside the local VM itself, so you will have to use a browser on the local VM to access it,
+however you should be able to get to the VM from the local host by using the VM's address on the site local
+network and `http` instead of the service name and `https`, since Nginx will be proxying it.
 
 If the `central-node` is running in a cloud VM, find its DNS name. On Azure, the DNS name 
 for your VM is on the VM *Overview* page.  You can then use a browser from the `gateway-node`
@@ -215,7 +209,10 @@ host or a laptop to access the
 Volttron Central website over the Internet by 
 typing `http://<DNS name for VM>/index.html` into the browser address
 bar. When accessing the Website over the Internet, you need to use 
-`http` and not `https` because the port opened on the firewall is port 80.
+`http` and not `https` because the port opened on the firewall is port 80. Note 
+that using the VM's global DNS name may not work from the command line on the cloud
+VM itself, but you can always use the service name 
+directly if you want to access it from outside the cluster on `central-node`.
 
 ### Configuring passwords in the Volttron Central admin page and viewing the dashboard
 

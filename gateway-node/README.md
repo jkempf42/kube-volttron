@@ -166,7 +166,61 @@ Be sure to remove the `vremote` Deployment before creating the `vbac` Deployment
 	
 ## Deploying the `vbac` microservice
 
-The following sections step you through deploying the `vbac` microservice.
+The following sections step you through deploying simulated air handling unit and the `vbac` microservice.
+
+### Deploying the simulated BACnet AHU
+
+The Python file `sim-AHU.py` is a copy of Ben Bartling's 
+[simulated air handling unit](https://github.com/bbartling/building-automation-web-weather/blob/f6a59e318862b35e3bb9e6514a9e9815c1edadd4/weather_forecast/fake_ahu.py), 
+implemented on top of the
+BAC0 package. On the gateway node, install the BAC0 package using `pip` 
+(installing `pip` if it isn't already):
+
+	pip install BAC0
+	
+In a separate bash shell window, start the simulated air handling unit:
+
+	python3 sim-AHU.py
+	
+You should see the following:
+
+	2022-05-07 19:26:00,094 - INFO    | Starting BAC0 version 21.12.03 (Lite)
+	2022-05-07 19:26:00,095 - INFO    | Use BAC0.log\_level to adjust verbosity of the app.
+	2022-05-07 19:26:00,095 - INFO    | Ex. BAC0.log\_level('silence') or BAC0.log_level('error')
+	2022-05-07 19:26:00,095 - INFO    | Starting TaskManager
+	2022-05-07 19:26:00,125 - INFO    | Using ip : 192.168.0.118
+	2022-05-07 19:26:00,177 - INFO    | Starting app...
+	2022-05-07 19:26:00,177 - INFO    | BAC0 started
+	2022-05-07 19:26:00,178 - INFO    | Registered as Simple BACnet/IP App
+	2022-05-07 19:26:00,180 - INFO    | Update Local COV Task started
+	2022-05-07 19:26:00,181 - INFO    | Adding DPR0-O to application.
+	2022-05-07 19:26:00,181 - INFO    | Adding DPR1-O to application.
+	2022-05-07 19:26:00,181 - INFO    | Adding DPR2-O to application.
+	2022-05-07 19:26:00,181 - INFO    | Adding DPR3-O to application.
+	2022-05-07 19:26:00,181 - INFO    | Adding DPR4-O to application.
+	2022-05-07 19:26:00,181 - INFO    | Adding DPR5-O to application.
+	2022-05-07 19:26:00,181 - INFO    | Adding DPR6-O to application.
+	2022-05-07 19:26:00,181 - INFO    | Adding DPR7-O to application.
+	2022-05-07 19:26:00,181 - INFO    | Adding DPR8-O to application.
+	2022-05-07 19:26:00,181 - INFO    | Adding DPR9-O to application.
+	2022-05-07 19:26:00,181 - INFO    | Adding DAP-SP to application.
+	2022-05-07 19:26:00,182 - INFO    | Adding SF-S to application.
+	2022-05-07 19:26:00,182 - INFO    | APP Created Success!
+	2022-05-07 19:26:00,182 - INFO    | DPR0-O is Real(50)
+	2022-05-07 19:26:00,182 - INFO    | Duct Pressure Setpoint is Real(1)
+	2022-05-07 19:26:10,188 - INFO    | DPR1-O is Real(50)
+	2022-05-07 19:26:10,189 - INFO    | Duct Pressure Setpoint is Real(1)
+	2022-05-07 19:26:20,195 - INFO    | DPR2-O is Real(50)
+	2022-05-07 19:26:20,196 - INFO    | Duct Pressure Setpoint is Real(1)
+
+Note down the IP address in line 5, since you will be using that to edit the two ConfigMap files.
+
+Currently `vbac` only supports one device. If you'd like to try another device, you can
+edit the ConfigMap files to insert the point list. See the Volttron documentation pages
+[here](https://volttron.readthedocs.io/en/main/driver-framework/bacnet/bacnet-auto-configuration.html) 
+about the scripts you'll need to run to find BACnet
+devices and generate configuration files for the Platform Driver Agent BACnet 
+driver and BACnet proxy.
 
 ### `vbac` manifests
 
@@ -224,60 +278,6 @@ change the name of the `kubernetes.io/hostname` value to your gateway node hostn
 
 - `vbac-service.yml`: A `ClusterIP` type service for the `vbac` pod, with 
 HTTP and VIP ports defined. 
-
-## Deploying the simulated BACnet AHU
-
-The Python file `sim-AHU.py` is a copy of Ben Bartling's 
-[simulated air handling unit](https://github.com/bbartling/building-automation-web-weather/blob/f6a59e318862b35e3bb9e6514a9e9815c1edadd4/weather_forecast/fake_ahu.py), 
-implemented on top of the
-BAC0 package. On the gateway node, install the BAC0 package using `pip` 
-(installing `pip` if it isn't already):
-
-	pip install BAC0
-	
-In a separate bash shell window, start the simulated air handling unit:
-
-	python3 sim-AHU.py
-	
-You should see the following:
-
-	2022-05-07 19:26:00,094 - INFO    | Starting BAC0 version 21.12.03 (Lite)
-	2022-05-07 19:26:00,095 - INFO    | Use BAC0.log\_level to adjust verbosity of the app.
-	2022-05-07 19:26:00,095 - INFO    | Ex. BAC0.log\_level('silence') or BAC0.log_level('error')
-	2022-05-07 19:26:00,095 - INFO    | Starting TaskManager
-	2022-05-07 19:26:00,125 - INFO    | Using ip : 192.168.0.118
-	2022-05-07 19:26:00,177 - INFO    | Starting app...
-	2022-05-07 19:26:00,177 - INFO    | BAC0 started
-	2022-05-07 19:26:00,178 - INFO    | Registered as Simple BACnet/IP App
-	2022-05-07 19:26:00,180 - INFO    | Update Local COV Task started
-	2022-05-07 19:26:00,181 - INFO    | Adding DPR0-O to application.
-	2022-05-07 19:26:00,181 - INFO    | Adding DPR1-O to application.
-	2022-05-07 19:26:00,181 - INFO    | Adding DPR2-O to application.
-	2022-05-07 19:26:00,181 - INFO    | Adding DPR3-O to application.
-	2022-05-07 19:26:00,181 - INFO    | Adding DPR4-O to application.
-	2022-05-07 19:26:00,181 - INFO    | Adding DPR5-O to application.
-	2022-05-07 19:26:00,181 - INFO    | Adding DPR6-O to application.
-	2022-05-07 19:26:00,181 - INFO    | Adding DPR7-O to application.
-	2022-05-07 19:26:00,181 - INFO    | Adding DPR8-O to application.
-	2022-05-07 19:26:00,181 - INFO    | Adding DPR9-O to application.
-	2022-05-07 19:26:00,181 - INFO    | Adding DAP-SP to application.
-	2022-05-07 19:26:00,182 - INFO    | Adding SF-S to application.
-	2022-05-07 19:26:00,182 - INFO    | APP Created Success!
-	2022-05-07 19:26:00,182 - INFO    | DPR0-O is Real(50)
-	2022-05-07 19:26:00,182 - INFO    | Duct Pressure Setpoint is Real(1)
-	2022-05-07 19:26:10,188 - INFO    | DPR1-O is Real(50)
-	2022-05-07 19:26:10,189 - INFO    | Duct Pressure Setpoint is Real(1)
-	2022-05-07 19:26:20,195 - INFO    | DPR2-O is Real(50)
-	2022-05-07 19:26:20,196 - INFO    | Duct Pressure Setpoint is Real(1)
-
-Note down the IP address in line 5, since you will be using that to edit the two ConfigMap files.
-
-Currently `vbac` only supports one device. If you'd like to try another device, you can
-edit the ConfigMap files to insert the point list. See the Volttron documentation pages
-[here](https://volttron.readthedocs.io/en/main/driver-framework/bacnet/bacnet-auto-configuration.html) 
-about the scripts you'll need to run to find BACnet
-devices and generate configuration files for the Platform Driver Agent BACnet 
-driver and BACnet proxy.
 
 ### Customizing the `bacnet` NetworkAttachmentDefinition
 

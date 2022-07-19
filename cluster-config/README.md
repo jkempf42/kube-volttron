@@ -380,7 +380,9 @@ Search for the line beginning `#server=`. Delete the line and add the following 
 	...
 	
 where the IP addresses of the names servers printed out by `systemd-resolve --status` 
-are at the end of the line indicated.
+are at the end of the line indicated. The first line is the default address of the CoreDNS 
+service in the cluster. If you suspect the service is deployed at a different address, you
+can check with `kubectl get -n kube-system svc kube-dns`.
 
 The first line will cause queries for names with the Kubernetes cluster domain name to be sent to
 the CoreOS DNS server, the others will ensure you have default DNS service.

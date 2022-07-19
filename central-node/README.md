@@ -1,7 +1,7 @@
 # Deploying Volttron Central on the central node.
 
 The instructions below assume that you have configured a cluster following the
-directions in `cluster-config/README.md`. The instructions will walk 
+directions in [`../cluster-config/README.md`](../cluster-config/README.md). The instructions will walk 
 you through the steps needed to deploy the `vcentral` microservice in 
 your central node VM. 
 

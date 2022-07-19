@@ -227,7 +227,8 @@ HTTP and VIP ports defined.
 
 ## Deploying the simulated BACnet AHU
 
-The Python file `sim-AHU.py` is a copy of Ben Barting's simulated air handling unit, 
+The Python file `sim-AHU.py` is a copy of Ben Bartling's 
+[simulated air handling unit](https://github.com/bbartling/building-automation-web-weather/blob/f6a59e318862b35e3bb9e6514a9e9815c1edadd4/weather_forecast/fake_ahu.py), 
 implemented on top of the
 BAC0 package. On the gateway node, install the BAC0 package using `pip` 
 (installing `pip` if it isn't already):

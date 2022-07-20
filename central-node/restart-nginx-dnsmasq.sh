@@ -28,9 +28,9 @@ while [[ $RETURN -ne 0 ]]; do
 
 done
 
-# Restart dnsmasq and nginx
+# Restart nginx
 
-echo "Restarting dnsmasq.service and nginx.service."
+echo "Restarting nginx.service."
 
 systemctl restart nginx.service
 

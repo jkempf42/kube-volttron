@@ -338,7 +338,7 @@ the CoreDNS server for the Kubernetes `cluster.local` domain is
 [here](https://blog.heptio.com/configuring-your-linux-host-to-resolve-a-local-kubernetes-clusters-service-urls-a8c7bdb212a7),
 and it assumes that your host is running `NetworkManager`. The instructions for editing
 the CoreDNS ConfigMap are also out of date (`proxy` has been replaced by `forward`). Unfortunately, my Azure cloud VM
-was not running `NetworkManager`, it was running `systemd-resolved` so I had to piece togther these instructions
+was not running `NetworkManager`, it was running `systemd-resolved` so I had to piece together these instructions
 from various sources. The following instructions should be run on the `central-node` VM. 
 
 First step is to edit your `/etc/hosts` file to ensure commands don't hang trying to look up `central-node`'s name

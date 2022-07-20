@@ -1,6 +1,6 @@
 #! /bin/bash
 
-# Restart nginx.service and dnsmasq.service when the CoreDNS pods are
+# Restart nginx.service when vcentral is
 # running.
 
 # Check if Nginx is configured for vcentral

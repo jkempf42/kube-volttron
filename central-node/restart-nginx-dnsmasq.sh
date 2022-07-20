@@ -32,7 +32,6 @@ done
 
 echo "Restarting dnsmasq.service and nginx.service."
 
-systemctl restart dnsmasq.service
 systemctl restart nginx.service
 
 echo "Done."

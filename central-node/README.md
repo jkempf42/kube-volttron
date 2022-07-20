@@ -192,6 +192,17 @@ following:
 
 - Restarts `dnsmasq.service` and `nginx.service` and exits.
 
+As superuser, copy `restart-nginx-dnsmasq.service` into the `/etc/systemd/system` 
+directory and `restart-nginx-dnsmasq.sh` into `/user/local/bin`. Run the following 
+commands:
+
+	sudo systemctl enable restart-nginx-dnsmasq.service
+	sudo systemctl start restart-nginx-dnsmasq.service
+
+And check whether it worked:
+
+	systemctl status restart-nginx-dnsmasq.service
+
 ## Testing the `vcentral` deployment
 
 ### Checking if the Volttron Central microservice web site is up

@@ -144,15 +144,27 @@ I created a Standard B2ms 2 vcpus, 8 G memory in Azure, so the instructions
 below assume you are working with the Azure portal. Name the VM `central-node`
 to make the following instructions easier.
 
-The cloud provider's firewall should
-have port 22 open for SSH on the VM. If the source is *Any*, meaning any IP address, you should set the 
-source to the `gateway-node` VM IP address since you will likely want to work from a shell window there.
+Once the VM is running, bring up the Azure dashboard
+display for your VM by clicking on *All resources*->*central-node*.
+Click on the *Public IP address* on the right side of the VM
+dashboard. When the IP address dashboard comes up, click on the 
+*Static* radio button under the *IP address assignment* label. This
+ensures that the IP address of the VM will remain the same if you bring down
+and restart the VM. Move down to the *DNS name label (optional)* field and
+type in "central-node". Click on the *X* in the upper left corner to
+return to the VM dashboard.
 
+In the left side menu, click on *Networking*. This will bring up a display
+of the open ports in the Azure firewall.
+The firewall should
+have port 22 open for SSH on the VM. Click on the row with the SSH display. 
+The port tab will come up on the right.
+If the source is *Any*, meaning any IP address, you should set the 
+source to the `gateway-node` VM IP address since you will likely want to work from a shell window there.
 You will need to 
 open ports for Wireguard
-and the Nginx reverse proxy. Bring up the Azure dashboard
-display for your VM by clicking on *All resources*->*central-node*.
-In the left side menu, click on *Networking*. Click on the blue 
+and the Nginx reverse proxy. 
+Click on the blue 
 *Add inbound port rule* button and fill out the form
 with the following for the Wireguard port:
 

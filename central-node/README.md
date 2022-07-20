@@ -169,7 +169,7 @@ Reload Nginx with:
 	
 It should not print anything out if your edits were correct.
 
-#### Creating a system service to restart dnsmasq and Nginx after `vcentral` is running
+#### Creating a system service to restart Nginx after `vcentral` is running
 
 If your `central-node` VM is running in a cloud, you may want to shut
 it down periodically to save cost or for other reasons then boot it up
@@ -178,8 +178,7 @@ again when you need it. Because `systemd` does not sychronize starting
 the CoreDNS pods are not running when `dnsmasq` boots, 
 `dnsmasq` won't be able to resolve 
 any names within the cluster for `nginx` and so the Nginx service fails to 
-start when it checks for `vcentral` site to proxy, and `dnsmasq` fails to 
-connect with the CoreDNS pods in the cluster. 
+start when it checks for `vcentral` site to proxy. 
 
 To fix this, we define a `systemd` service, `restart-nginx-dnsmasq.service` 
 in the file by that name in this directory. The service starts up the
@@ -190,7 +189,7 @@ following:
 
 - Waits until the `vcentral` service is running,
 
-- Restarts `dnsmasq.service` and `nginx.service` and exits.
+- Restarts `nginx.service` and exits.
 
 As superuser, copy `restart-nginx-dnsmasq.service` into the `/etc/systemd/system` 
 directory and `restart-nginx-dnsmasq.sh` into `/user/local/bin`. Run the following 

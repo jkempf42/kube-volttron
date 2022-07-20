@@ -160,7 +160,7 @@ The firewall should
 have port 22 open for SSH on the VM. Click on the row with the SSH display. 
 The port tab will come up on the right.
 If the source is *Any*, meaning any IP address, you should set the 
-source to the `gateway-node` VM IP address since you will likely want to work from a shell window there.
+source to the `gateway-node` VM IP address since you will likely want to work from an `ssh` window there.
 You will need to 
 open ports for Wireguard
 and the Nginx reverse proxy. 

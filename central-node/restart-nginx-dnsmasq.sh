@@ -9,7 +9,7 @@ if [[ ! -e /etc/nginx/conf.d/kube.conf ]] ; then
     exit
 fi
 
-grep vcentral /etc/nginx/nginx.conf/kube.conf 2>1 1>/dev/null
+grep vcentral /etc/nginx/conf.d/kube.conf 2>1 1>/dev/null
 RETURN=$?
 
 if [[ $RETURN -ne 0 ]]; then

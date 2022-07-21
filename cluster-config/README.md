@@ -675,7 +675,7 @@ you need to run the following as a regular user:
 
 This creates a subdirectory in your home directory called `.kube` and copies the cluster configuration file into it.
 
-#### Removing the taints on the `central-node` prohibiting application workload deployment.
+#### Removing the taints on the `central-node` prohibiting application workload deployment
 
 As installed out of the box, `kubeadm` places taints on the control node
 disallowing deployment of application workloads. Since we want to deploy the

@@ -939,10 +939,11 @@ used to start the `kubelet` which acts as the local node manager.
 Since `wg0` is not the 
 first interface, the node's `kubelet` may not be
 accessable from `central-node` if the the central and gateway nodes are
-not in the same routing domain. In addition, if the Kubernetes control
+not in the same routing domain, as will be the case if `central-node` is in a cloud
+VM and `gateway-node` is in a local VM. In addition, if the Kubernetes control
 plane doesn't run over the Wireguard VPN, it will not be encrypted.
-We need to reinitialize the `kubelet` with the correct 
-address. If this step is not taken, `central-node` will get a routing
+We need to reinitialize the `kubelet` so that it gets the correct 
+address, 10.8.0.2. If this step is not taken, `central-node` will get a routing
 error when it tries to contact the `kubelet` on `gateway-node`, for example,
 when trying to `exec` into a pod using `kubectl`.
 

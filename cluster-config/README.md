@@ -762,49 +762,7 @@ To check whether Multus is running:
 
 	kubectl get -n kube-system pods | grep multus
 	
-#### Editing CoreDNS ConfigMap to forward to upstream DNS
-
-We need to edit the CoreDNS ConfigMap so that it forwards to the upstream DNS rather than using `/etc/resolv.conf`
-through 127.0.0.1, the `dnsmasq` address, which can slow name resolution.
-
-Use `kubectl` to edit the CoreDNS ConfigMap:
-
-	kubectl edit -n kube-system configmap coredns
-
-The ConfigMap should come up in your favorite editor (the value of the `EDITOR` shell environment key). 
-Search for the line with `forward` in it 
-and replace `/etc/resolv.conf` with the IP address of the DNS server on you primary interface from above:
-
-	forward . <IP address of primary interface DNS server> {
-
-Save the file and exit.
-
-Now restart the CoreDNS pod by finding the pod name:
-
-	kubectl get -n kube-system pods | grep coredns
-
-Delete the pods:
-
-	kubectl delete -n kube-system pod <coredns pod name> 
-
-The CoreDNS Deployment should restart the pod automatically. 
-
-When the pod is running, test resolution into the Kubernetes cluster with:
-
-	dig kube-dns.kube-system.svc.cluster.local
-
-It should return something like:
-
-	...
-	;; QUESTION SECTION:
-	;kube-dns.kube-system.svc.cluster.local.	IN A
-	
-	
-	;; ANSWER SECTION:
-	kube-dns.kube-system.svc.cluster.local.	30 IN A	10.96.0.10
-	...
-
-## Fixing DNS on `central-node` so that it can resolve service/host names in the cluster
+#### Fixing DNS on `central-node` so that it can resolve service/host names in the cluster
 
 As mentioned above, we will be using the Nginx reverse proxy to proxy the `vcentral`
 microservice web page to the Internet for a cloud `central-node` deployment, or to 
@@ -901,6 +859,50 @@ Check for upstream connectivity:
 
 Once we have the Kubernetes cluster installed, we'll edit the CoreDNS ConfigMap
 to use the upstream resolver rather than `/etc/resolv.conf`.
+
+#### Editing CoreDNS ConfigMap to forward to upstream DNS
+
+We need to edit the CoreDNS ConfigMap so that it forwards to the upstream DNS rather than using `/etc/resolv.conf`
+through 127.0.0.1, the `dnsmasq` address, which can slow name resolution.
+
+Use `kubectl` to edit the CoreDNS ConfigMap:
+
+	kubectl edit -n kube-system configmap coredns
+
+The ConfigMap should come up in your favorite editor (the value of the `EDITOR` shell environment key). 
+Search for the line with `forward` in it 
+and replace `/etc/resolv.conf` with the IP address of the DNS server on you primary interface from above:
+
+	forward . <IP address of primary interface DNS server> {
+
+Save the file and exit.
+
+Now restart the CoreDNS pod by finding the pod name:
+
+	kubectl get -n kube-system pods | grep coredns
+
+Delete the pods:
+
+	kubectl delete -n kube-system pod <coredns pod name> 
+
+The CoreDNS Deployment should restart the pod automatically. 
+
+When the pod is running, test resolution into the Kubernetes cluster with:
+
+	dig kube-dns.kube-system.svc.cluster.local
+
+It should return something like:
+
+	...
+	;; QUESTION SECTION:
+	;kube-dns.kube-system.svc.cluster.local.	IN A
+	
+	
+	;; ANSWER SECTION:
+	kube-dns.kube-system.svc.cluster.local.	30 IN A	10.96.0.10
+	...
+
+
 
 ###  Installing `gateway-node` as a worker node
 

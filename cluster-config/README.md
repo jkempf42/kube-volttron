@@ -637,7 +637,7 @@ there are any other container runtime sockets lying about.
 Note that if you think you may later want to turn the cluster into an HA cluster 
 with multiple control plane nodes and a cloud provider load balancer, you should also 
 include the `--control-plane-endpoint` parameter as described [here](https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/#considerations-about-apiserver-advertise-address-and-controlplaneendpoint)
-since it is not possible to configure a cluster HA unless the control plane IP address is specified when the cluster is created.
+since it is not possible to configure an HA cluster unless the control plane IP address is specified when the cluster is created.
 
 Run `kubeadm init` on the central node:
 

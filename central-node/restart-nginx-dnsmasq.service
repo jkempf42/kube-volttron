@@ -1,5 +1,5 @@
 [Unit]
-Description=Restart nginx when the CoreDNS server in the Kubernetes cluster has booted.
+Description=Restart nginx when web application has booted.
 After=network.service kubelet.service dnsmasq.service
 
 [Service]

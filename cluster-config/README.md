@@ -614,7 +614,7 @@ firewall installed, running, and configured.
 ### Installing `central-node` as a control node
 
 We first need to run `kubeadm` on `central-node` with arguments specific to configuring 
-`central-node` as a control node
+`central-node` as a control node.
 The following arguments need to be set:
 
 - Since we are using Flannel, we need to reserve the pod CIDR using 

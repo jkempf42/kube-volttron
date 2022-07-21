@@ -265,7 +265,7 @@ This is the file that is loaded into the Platform Driver Agent BACnet driver whe
 
 #### `vbac` microservice manifests for BACnet devices
 
-The `vbac` microservice with the gateway for the BACnet protocol consists of two 
+The `vbac` microservice consists of two 
 manifests:
 
 - `vbac-deploy.yml`: Creates a one pod Deployment of the `vbac` microservice

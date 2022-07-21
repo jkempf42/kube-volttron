@@ -34,7 +34,7 @@ overview of which is is discussed in the next section.
 
 If you decide to deploy `vbac`, you will need some additional networking support to
 allow the Volttron BACnet proxy agent to access BACnet devices on the local area
-network. By default, kube-volttron uses the
+network. By default, `kube-volttron` uses the
 [Flannel CNI driver](https://github.com/flannel-io/flannel#flannel)
 for intra cluster networking between pods. Flannel constructs an 
 isolated overlay network inside the cluster

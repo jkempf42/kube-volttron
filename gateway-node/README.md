@@ -269,9 +269,11 @@ The `vbac` microservice consists of two
 manifests:
 
 - `vbac-deploy.yml`: Creates a one pod Deployment of the `vbac` microservice
-running the Volttron BACnet Proxy Agent, with a Forwarding Historian to send data to 
-the Volttron Central pod historian database, and an Actuator agent to receive commands 
-from Volttron Central. Edit the file and 
+running the Volttron BACnet Proxy Agent, a Forwarding Historian to send data to 
+the Volttron Central pod historian database, an Actuator agent to receive commands 
+from Volttron Central, a Platform Driver Agent configured with the BACnet driver,
+and a Volttron Central Platform Agent to handle application connectivity with
+the Volttron Central Agent. Edit the file and 
 change the name of the `kubernetes.io/hostname` value to your gateway node hostname.
 
 - `vbac-service.yml`: A `ClusterIP` type service for the `vbac` pod, with 

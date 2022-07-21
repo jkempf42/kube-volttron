@@ -990,9 +990,7 @@ The CNI DHCP relay must be running
 on the gateway node itself to connect with the local
 subnet DHCP server. This section describes how to deploy the CNI DHCP
 relay as a `systemctl` service so the relay is restarted when the node
-reboots. Although we only need an address on the gateway site network,
-we install the relay on both the central node and gateway node, in case
-a central node pod also needs an address on the local network.
+reboots. 
 
 The first step is to copy the shell script 
 `cleanstart-cni-dhcpd.sh`, which cleans up any old sockets and starts the daemon, from `cluster-config` to `/usr/local/bin`:

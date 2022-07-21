@@ -155,15 +155,9 @@ type in "central-node". Click on *Save* in the top bar menu to save
 the configuration, then on the *X* in the upper left corner to
 return to the VM dashboard.
 
-In the left side menu, click on *Networking*. This will bring up a display
-of the open ports in the Azure firewall.
-The firewall should
-have port 22 open for SSH on the VM. Click on the row with the SSH display. 
-The port tab will come up on the right.
-If the source is *Any*, meaning any IP address, you should set the 
-source to the `gateway-node` VM IP address since you will likely want to work from an `ssh` window there.
-You will need to 
-open ports for Wireguard
+In the left side menu, click on *Networking*. This will bring up a table of the open ports in the Azure firewall. The table should have a row for port 22, open for `ssh`. Double click on the row for `ssh`. The port configuration tab will come up on the right. If the source is *Any*, meaning any IP address, you should set the source to the `gateway-node` VM public IP address which you recorded above since you will likely want to work from an `ssh` window there.
+
+You will need to open new ports for Wireguard
 and the Nginx reverse proxy. 
 Click on the blue 
 *Add inbound port rule* button and fill out the form

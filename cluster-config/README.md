@@ -192,7 +192,7 @@ the following:
 
 ### Install Nginx in the cloud VM
 
-The next step is to install Nginx on the `central-node` node cloud VM. 
+The next step is to install Nginx on the `central-node` cloud VM. 
 Use the instructions [here](https://docs.nginx.com/nginx/admin-guide/installing-nginx/installing-nginx-open-source/). They are very straightforward. You can
 install Nginx Plus if you want, but these instructions were developed with
 open source Nginx.

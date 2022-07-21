@@ -878,7 +878,7 @@ Now restart the CoreDNS pod by finding the pod name:
 
 	kubectl get -n kube-system pods | grep coredns
 
-Delete the pods:
+Delete the pod:
 
 	kubectl delete -n kube-system pod <coredns pod name> 
 

@@ -656,7 +656,7 @@ When `kubeadm` is finished, it will print out:
 
 	kubeadm join <control-plane-host>:<control-plane-port> --token <token> --discovery-token-ca-cert-hash sha256:<hash>
 
-Note that <control-plane-host> will be the IP address of the primary interface on the `central-node` VM. If the VM is running in a public cloud, the address will be from the private IP address space on a cloud provider virtual private cloud network assigned to your VM. It will not be the `wg0` interface IP address. But this should not cause any issues since connectivity is available through the `wg0` interface. If `central-node` is on a local VM, the address will be on the site local network.
+Note that `<control-plane-host>` will be the IP address of the primary interface on the `central-node` VM. If the VM is running in a public cloud, the address will be from the private IP address space on a cloud provider virtual private cloud network assigned to your VM. It will not be the `wg0` interface IP address. But this should not cause any issues since connectivity is available through the `wg0` interface. If `central-node` is on a local VM, the address will be on the site local network.
 
 Since we will use the `kubeadm join` shortly to
 join the `gateway-node` to the `central-node` control plane,

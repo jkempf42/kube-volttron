@@ -11,7 +11,7 @@ The gateway pod monitors IoT devices
 on the site, reports the data back to the Volttron Central historian
 running in the
 central node, and conveys commands from Volttron Central to the devices. In the
-`kube-volttron` prototype, the gateway node runs in a VirtualBox VM,
+`kube-volttron` prototype, the `gateway-node` runs in a VirtualBox VM,
 monitors a simulated service running directly the host, and reports back
 to the Volttron Central historian. 
 

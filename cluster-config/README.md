@@ -527,10 +527,9 @@ the new gateway node, being sure
 to add the appropriate keys and IP address as described above. You can copy
 the file above and change the configuration key values as appropriate. Use
 the `systemctl` commands above for starting the Wireguard service on the new 
-gateway node.
-
-You should not need to configure the central node as it should recognize IP
-addresses in the `10.8.0.0/24` range. Test the configuration with `ping`.
+gateway node. Then add a `[Peer]` section in the `central-node` `wg0.conf` file
+for the new gateway node and restart the `systemd` service. 
+Test the configuration with `ping`.
 
 ## Creating the Kubenetes cluster
 

@@ -85,7 +85,6 @@ conduct BACnet broadcast (WhoIs/IAm) but this architecture should enable broadca
 to the `vbac` pod in the future. Without the second interface, the gateway pod cannot communicate 
 with BACnet devices on the site local IP subnet.
 
-
 ## Collecting information on the network interfaces
 
 Since you will need to customize the NetworkAttachmentDefinition file for your gateway 
@@ -141,7 +140,7 @@ then clicking on *Platforms*. You should see a display like this:
 
 Notice that the display says that 0 agents are running. This is because the dashboard
 uses the process id of the agent process to determine if the agent is running, but
-if the agent is running in a separate container on another machine, so
+if the agent is running in a separate container on another machine, 
 the process id is unavailable to the Volttron Central web app.
 
 Clicking on *vremote* shows the agents running in the `vremote` microservice:

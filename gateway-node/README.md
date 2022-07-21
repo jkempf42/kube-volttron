@@ -44,7 +44,7 @@ is no routing from pods inside the cluster to devices outside, though routing in
 is possible through the Flannel `10.244.0.0/24` address via the `kube-proxy`. Pods 
 can also communicate with pods on other nodes in the cluster, which means the `vbac` pod can reach the
 `vcentral` pod on the central node through 
-the overlay. With Flannel, any communication with the site network must go through a proxy`kube-proxy`.
+the overlay. With Flannel, any communication with the site network must go through a proxy.
 
 BACnet uses broadcast for device discovery, and the Volttron BACnet proxy must be able to 
 send and receive UDP traffic directly to and from the device, so the `vbac` pod

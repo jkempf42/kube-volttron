@@ -91,7 +91,7 @@ with BACnet devices on the site local IP subnet.
 Since you will need to customize the NetworkAttachmentDefinition file for your gateway 
 node's networking interface information, 
 you need to collect information on your network interfaces. 
-Find your gateway node IP addresses using `ifconfig` and note the IP address having the highest number as the last
+Find your gateway node IP addresses using `ip address` and note the IP address having the highest number as the last
 character in its name.
 For example, on my machine the first interface is named `enp0s3` while the second interface
 is named `enp0s8`. The second interface will become part of the gateway pod.

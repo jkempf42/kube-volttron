@@ -21,8 +21,7 @@ with the hostname of your central node.
 - `vcentral-service.yml`: This defines a NodePort type Service for the `vcentral` HTTP service at
 port 8443 and the VIP bus service at port 22916. The Nginx reverse proxy
 forwards HTTP requests on port 80 of the global DNS name for the VM to port 8443, or you can access the service directly at port 8443 
-if on your local VirtualBox
-VM. The VIP bus service allows the `gateway-node` pod to connect
+on your local VirtualBox VM. The VIP bus service allows the `gateway-node` pod to connect
 with the VIP bus in the `central-node` pod. 
 
 ### Vcentral storage manifest

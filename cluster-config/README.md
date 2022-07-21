@@ -878,15 +878,15 @@ and replace `/etc/resolv.conf` with the IP address of the DNS server on you prim
 
 Save the file and exit.
 
-Now restart the CoreDNS pod by finding the pod names (there should be two):
+Now restart the CoreDNS pods by finding the pod names (there should be two):
 
 	kubectl get -n kube-system pods | grep coredns
 
-Delete the pod:
+Delete the pods:
 
 	kubectl delete -n kube-system pod <coredns pod name> <coredns pod name>
 
-The CoreDNS Deployment should restart the pod automatically. 
+The CoreDNS Deployment should restart the pods automatically. 
 
 When the pods are running, test resolution into the Kubernetes cluster with:
 

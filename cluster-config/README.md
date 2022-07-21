@@ -338,7 +338,7 @@ to route packets out of the VM, which are completely unnecessary for the
 `kube-volttron` use case. 
 `kube-volttron` doesn't need this, since we will be running the Kubernetes control
 and data plane traffic between nodes in the cluster and routes to other
-services on other nodes will be handled by Kubernetes. 
+services on other nodes will be handled by the host VMs. 
 The best guide I've found is at [this link](https://www.digitalocean.com/community/tutorials/how-to-set-up-wireguard-on-ubuntu-20-04). The author notes 
 where you can skip configuration instructions for deploying Wireguard as 
 a VPN server, and includes instructions for configuring with IPv6 which

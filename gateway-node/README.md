@@ -231,7 +231,7 @@ pod with the second interface.
 The file `bacnet-net-attach-def.yml` contains such an attachment definition. 
 Multus matches the value of the NetworkAttachmentDefinition 
 `name` in the `metaData` section (`bacnet` in this case) with a configuration item in 
-the bacnet Deployment pod spec for the second interface. The `config` value is a 
+the `bacnet` Deployment pod spec for the second interface. The `config` value is a 
 JSON object providing the configuration for the second interface.
 
 #### ConfigMap manifests for `vbac`

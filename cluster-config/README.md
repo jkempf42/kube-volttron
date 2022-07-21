@@ -314,104 +314,6 @@ Finally, enable the bridge net filter driver `br_netfilter`:
 Edit the file `/etc/modules` as superuser and add a line with `br_netfilter` 
 on it so the module will be reloaded when the VMs reboot.
 
-## Fixing DNS on `central-node` so that it can resolve service/host names in the cluster
-
-As mentioned above, we will be using the Nginx reverse proxy to proxy the `vcentral`
-microservice web page to the Internet for a cloud `central-node` deployment, or to 
-the local `central-node` host if it is deployed to a VirtualBox VM. The `vcentral`
-microservice is deployed as a NodePort service which means that it has an IP address
-accessable outside the cluster from the host, but this IP address changes every
-time the VM is stopped and restarted. Since you may not want to keep the VM running
-all the time, especially if it is deployed in a public cloud, a better solution 
-than using the IP address in the Nginx configuration is to use the service/host
-name since that will not change. To enable host name resolution from outside to 
-inside the cluster, we need to do some DNS configuration both on the host and
-in the cluster. 
-
-The only reference I could find about how to configure DNS lookup to use
-the CoreDNS server for the Kubernetes `cluster.local` domain is
-[here](https://blog.heptio.com/configuring-your-linux-host-to-resolve-a-local-kubernetes-clusters-service-urls-a8c7bdb212a7),
-and it assumes that your host is running `NetworkManager`. The instructions for editing
-the CoreDNS ConfigMap are also out of date (`proxy` has been replaced by `forward`). Unfortunately, my Azure cloud VM
-was not running `NetworkManager`, it was running `systemd-resolved` so I had to piece together these instructions
-from various sources. The following instructions should be run on the `central-node` VM. 
-
-First step is to edit your `/etc/hosts` file to ensure commands don't hang trying to look up `central-node`'s name
-if you lose access
-to DNS. Find your ip address on `central-node` with:
-
-	ip address
-	
-and select the address associated with the `eth0` interface or the interface with the 
-lowest number as the last character. Then as superuser, edit `/etc/hosts`
-and insert one line at the top
-with the IP address and name of `central-node`:
-
-	<central-node IP address> central-node
-
-This ensures that when you turn off DNS, should you run into problems, commands won't hang
-for lengthy periods. 
-
-You should also find your current DNS server addresses by running:
-
-	systemd-resolve --status
-	
-The addresses will appear near the end of the output, under the link names for your primary
-network interface (typically `eth0`). 
-
-Next step is to install `dnsmasq` with `systemd-resolvd` running (so you have DNS service):
-
-	sudo apt update
-	sudo apt install dnsmasq
-
-Check status with:
-
-	systemctl status dnsmasq.service
-
-The status may indicate failure because `systemd-resolved.service` is still running,
-but don't worry, we'll restart it after we configure `dnsmasq`.
-
-Now `sudo` edit the `dnsmasq` configuration file `/etc/dnsmasq.conf` and uncomment the following lines:
-
-	domain-needed
-	bogus-priv
-
-These ensure that names without a dot are not forwarded upstream and that addresses
-from non-routed address spaces are not returned downstream.
-
-Search for the line beginning `#server=`. Delete the line and add the following lines:
-
-	server=/cluster.local/10.96.0.10
-	server=<IP address of first name server>
-	server=<IP address of second name server>
-	...
-	
-where the IP addresses of the names servers printed out by `systemd-resolve --status` 
-are at the end of the line indicated. The first line is the default address of the CoreDNS 
-service in the cluster. If you suspect the service is deployed at a different address, you
-can check with `kubectl get -n kube-system svc kube-dns`.
-
-The first line will cause queries for names with the Kubernetes cluster domain name to be sent to
-the CoreDNS server, the others will ensure you have default DNS service.
-
-Save the file and exit.
-
-Disable `systemd-resolved`:
-
-	sudo systemctl stop systemd-resolved.service
-	sudo systemctl disable systemd-resolved.service
-
-Restart `dnsmasq`:
-
-	sudo systemctl restart dnsmasq.service
-	
-Check for upstream connectivity:
-
-	ping google.com
-
-Once we have the Kubernetes cluster installed, we'll edit the CoreDNS ConfigMap
-to use the upstream resolver rather than `/etc/resolv.conf`.
-
 ## Installing and configuring the Wireguard VPN
 
 Wireguard creates a virtual interface on a node 
@@ -902,6 +804,104 @@ It should return something like:
 	;; ANSWER SECTION:
 	kube-dns.kube-system.svc.cluster.local.	30 IN A	10.96.0.10
 	...
+
+## Fixing DNS on `central-node` so that it can resolve service/host names in the cluster
+
+As mentioned above, we will be using the Nginx reverse proxy to proxy the `vcentral`
+microservice web page to the Internet for a cloud `central-node` deployment, or to 
+the local `central-node` host if it is deployed to a VirtualBox VM. The `vcentral`
+microservice is deployed as a NodePort service which means that it has an IP address
+accessable outside the cluster from the host, but this IP address changes every
+time the VM is stopped and restarted. Since you may not want to keep the VM running
+all the time, especially if it is deployed in a public cloud, a better solution 
+than using the IP address in the Nginx configuration is to use the service/host
+name since that will not change. To enable host name resolution from outside to 
+inside the cluster, we need to do some DNS configuration both on the host and
+in the cluster. 
+
+The only reference I could find about how to configure DNS lookup to use
+the CoreDNS server for the Kubernetes `cluster.local` domain is
+[here](https://blog.heptio.com/configuring-your-linux-host-to-resolve-a-local-kubernetes-clusters-service-urls-a8c7bdb212a7),
+and it assumes that your host is running `NetworkManager`. The instructions for editing
+the CoreDNS ConfigMap are also out of date (`proxy` has been replaced by `forward`). Unfortunately, my Azure cloud VM
+was not running `NetworkManager`, it was running `systemd-resolved` so I had to piece together these instructions
+from various sources. The following instructions should be run on the `central-node` VM. 
+
+First step is to edit your `/etc/hosts` file to ensure commands don't hang trying to look up `central-node`'s name
+if you lose access
+to DNS. Find your ip address on `central-node` with:
+
+	ip address
+	
+and select the address associated with the `eth0` interface or the interface with the 
+lowest number as the last character. Then as superuser, edit `/etc/hosts`
+and insert one line at the top
+with the IP address and name of `central-node`:
+
+	<central-node IP address> central-node
+
+This ensures that when you turn off DNS, should you run into problems, commands won't hang
+for lengthy periods. 
+
+You should also find your current DNS server addresses by running:
+
+	systemd-resolve --status
+	
+The addresses will appear near the end of the output, under the link names for your primary
+network interface (typically `eth0`). 
+
+Next step is to install `dnsmasq` with `systemd-resolvd` running (so you have DNS service):
+
+	sudo apt update
+	sudo apt install dnsmasq
+
+Check status with:
+
+	systemctl status dnsmasq.service
+
+The status may indicate failure because `systemd-resolved.service` is still running,
+but don't worry, we'll restart it after we configure `dnsmasq`.
+
+Now `sudo` edit the `dnsmasq` configuration file `/etc/dnsmasq.conf` and uncomment the following lines:
+
+	domain-needed
+	bogus-priv
+
+These ensure that names without a dot are not forwarded upstream and that addresses
+from non-routed address spaces are not returned downstream.
+
+Search for the line beginning `#server=`. Delete the line and add the following lines:
+
+	server=/cluster.local/10.96.0.10
+	server=<IP address of first name server>
+	server=<IP address of second name server>
+	...
+	
+where the IP addresses of the names servers printed out by `systemd-resolve --status` 
+are at the end of the line indicated. The first line is the default address of the CoreDNS 
+service in the cluster. If you suspect the service is deployed at a different address, you
+can check with `kubectl get -n kube-system svc kube-dns`.
+
+The first line will cause queries for names with the Kubernetes cluster domain name to be sent to
+the CoreDNS server, the others will ensure you have default DNS service.
+
+Save the file and exit.
+
+Disable `systemd-resolved`:
+
+	sudo systemctl stop systemd-resolved.service
+	sudo systemctl disable systemd-resolved.service
+
+Restart `dnsmasq`:
+
+	sudo systemctl restart dnsmasq.service
+	
+Check for upstream connectivity:
+
+	ping google.com
+
+Once we have the Kubernetes cluster installed, we'll edit the CoreDNS ConfigMap
+to use the upstream resolver rather than `/etc/resolv.conf`.
 
 ###  Installing `gateway-node` as a worker node
 

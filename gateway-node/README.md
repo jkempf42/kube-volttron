@@ -164,7 +164,7 @@ Be sure to remove the `vremote` Deployment before creating the `vbac` Deployment
 	
 ## Deploying the `vbac` microservice
 
-The following sections step you through deploying simulated air handling unit and the `vbac` microservice.
+The following sections step you through deploying the simulated air handling unit and the `vbac` microservice.
 
 ### Deploying the simulated BACnet AHU
 

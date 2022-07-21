@@ -392,7 +392,7 @@ service in the cluster. If you suspect the service is deployed at a different ad
 can check with `kubectl get -n kube-system svc kube-dns`.
 
 The first line will cause queries for names with the Kubernetes cluster domain name to be sent to
-the CoreOS DNS server, the others will ensure you have default DNS service.
+the CoreDNS server, the others will ensure you have default DNS service.
 
 Save the file and exit.
 

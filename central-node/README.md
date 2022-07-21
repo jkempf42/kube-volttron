@@ -150,7 +150,7 @@ Volttron Central website outside of the `central-node` VM.
 Edit `/etc/nginx/nginx.conf` as superuser and comment out the line for 
 sites enabled:
 
-	\# include /etc/nginx/sites-enabled/*;
+	# include /etc/nginx/sites-enabled/*;
 
 
 This ensures that the only pathnames will come from `/etc/nginx/conf.d`, which is

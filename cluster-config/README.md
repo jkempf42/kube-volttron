@@ -151,7 +151,8 @@ dashboard. When the IP address dashboard comes up, click on the
 *Static* radio button under the *IP address assignment* label. This
 ensures that the IP address of the VM will remain the same if you bring down
 and restart the VM. Move down to the *DNS name label (optional)* field and
-type in "central-node". Click on the *X* in the upper left corner to
+type in "central-node". Click on *Save* in the top bar menu to save
+the configuration, then on the *X* in the upper left corner to
 return to the VM dashboard.
 
 In the left side menu, click on *Networking*. This will bring up a display

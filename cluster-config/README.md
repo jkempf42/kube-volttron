@@ -165,7 +165,7 @@ with the following for the Wireguard port:
 
 - *Source*: *IP Address*.
 - *Source IP addresses/CIDR ranges*: IP address of the `gateway-node` host.  
-- *Source port ranges*: Leave at default of *** (any).
+- *Source port ranges*: Leave at default of * (any).
 - *Destination*: Leave at default of *Any*.
 - *Service*: Leave at *Custom*.
 - *Destination Port Ranges*: 51820, the Wireguard port
@@ -180,7 +180,7 @@ the following:
 
 - *Source*: *IP Address*.
 - *Source IP addresses/CIDR ranges*: IP address of the `gateway-node` host.
-- *Source port ranges*: Leave at default of *** (any).
+- *Source port ranges*: Leave at default of * (any).
 - *Destination*: leave at default of *Any*.
 - *Service*: *HTTP*.
 - *Destination Port Ranges*: It will be set to 80 and greyed out.

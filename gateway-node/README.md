@@ -116,7 +116,7 @@ The `vremote` microservice is not accessable directly from outside the cluster.
 
 ### Deploying the `vremote` microservice pod
 
-If you just want to try out kube-volttron, you can deploy the `vremote` pod with
+If you just want to try out `kube-volttron`, you can deploy the `vremote` pod with
 the fake driver. First you need to deploy the `vremote` Service:
 
 	kubectl apply -f vremote-service.yml

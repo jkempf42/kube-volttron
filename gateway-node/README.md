@@ -24,7 +24,7 @@ actual device and no additional Kubernetes objects.
 
 - `vbac` - a Volttron microservice that handles devices using the 
 [BACnet protocol](http://www.bacnet.org/). This device requires
-the [simulated AHU device](https://github.com/bbartling/building-automation-web-weather), provided courtesy of Ben Barting, incorporated here
+the [simulated AHU device](https://github.com/bbartling/building-automation-web-weather), provided courtesy of Ben Bartling, incorporated here
 by copy as sim-AHU.py which is
 based on the [BAC0](https://bac0.readthedocs.io/en/latest/) package by Christian Tremblay. See below for more on how to deploy it. Device configuration for `sim-AHU.py` is baked into the `vbac` microservice. The `vbac` microservice 
 also requires additional network configuration an

@@ -66,7 +66,7 @@ the `volttron-docker` version 3.2 repo.
 
 ## Notes on the suitability of kube-volttron for production deployment.
 
-The yaml manifests in the `central-node` and `gateway-node` directories  
+The yaml manifests in the `central-node` and `gateway-node` directories 
 pull demo prebuilt images from the Docker hub `jkempf42/public-repo`. 
 If you decide to develop your own Volttron microservice containers, 
 you will need to replace
@@ -75,7 +75,7 @@ the name of the container image in the manifests under the
 `jkempf42/public-repo:<image type tag>`, with your own repository and image tag.
 
 The demo `vcentral`, `vremote`, and `vbac` images in `jkempf42/public-repo` have been build 
-with an ubuntu 20.04 image loaded with
+with an Ubuntu 20.04 image loaded with
 debugging tools, especially for network debugging (`traceroute`, `ping`, `dig`, etc.). 
 Once `microservice-volttron` is made public, you should modify the 
 Dockerfiles at `microservice-volttron` to produce smaller 

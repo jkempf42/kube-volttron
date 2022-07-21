@@ -597,7 +597,7 @@ To install the Kubernetes utilities and `kubeadm` type the following commands:
 	sudo apt-get install -y kubelet kubeadm kubectl
 	sudo apt-mark hold kubelet kubeadm kubectl
 
-This installs `kubectl`, `kubeadm, and `kubelet`,
+This installs `kubectl`, `kubeadm`, and `kubelet`,
 and starts `kubelet` as a `systemd` service. It also marks the Kubernetes 
 utilites so that they are not automatically updated. The `kubelet` on
 the `gateway-node` will need some configuration but we need to configure it

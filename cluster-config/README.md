@@ -117,7 +117,7 @@ proprietary SDN APIs.
 Instead of using a LoadBalancer service, we export the Volttron Central
 Web service using a NodePort service. NodePort services are restricted
 to a particular port range, but can be accessed from outside
-the cluster through the IP address provided in their Endpoint objects. 
+the cluster through their cluster DNS service name. 
 We expose the NodePort service
 through a public Internet address/DNS name provided by the cloud provider for
 the VM

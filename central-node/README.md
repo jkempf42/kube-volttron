@@ -173,11 +173,10 @@ It should not print anything out if your edits were correct.
 If your `central-node` VM is running in a cloud, you may want to shut
 it down periodically to save cost or for other reasons then boot it up
 again when you need it. Because `systemd` does not sychronize starting 
-`dnsmasq.service` and `nginx.service` with the Kubernetes cluster, if
-the CoreDNS pods are not running when `dnsmasq` boots, 
-`dnsmasq` won't be able to resolve 
-any names within the cluster for `nginx` and so the Nginx service fails to 
-start when it checks for `vcentral` site to proxy. 
+`vcentral` and `nginx.service` , if
+`vcentral` ia not running when `nginx` boots, 
+`nginx` won't be able to resolve the `vcentral` service name when it checks 
+for `vcentral` site to proxy. 
 
 To fix this, we define a `systemd` service, `restart-nginx-dnsmasq.service` 
 in the file by that name in this directory. The service starts up the

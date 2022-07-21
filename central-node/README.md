@@ -11,7 +11,7 @@ your central node VM.
 
 The `vcentral` service manifests are contained in the following two yaml files: 
 
-- `vcentral-deploy.yml`: This sets up a Kubernetes Deployment for a vcentral Volttron Central microservice with an 
+- `vcentral-deploy.yml`: This deploys the `vcentral` Volttron Central microservice on `central-node` with the
 SQL Lite historian mounted to the VM's file system so the data survives the
 container going down. The deployment has only one replica pod. The Kubernetes Deployment restarts the pod if it crashes. 
 You need to edit the file and replace the value of the 

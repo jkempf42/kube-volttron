@@ -6,7 +6,7 @@ connected to the site's local area network with routing to the Internet
 through an internal or external firewall.
 A gateway pod with a Volttron deployment acts as an intermediary between the
 IoT devices running on the site and the Volttron Central pod running on the
-control node. 
+central node. 
 The gateway pod monitors IoT devices 
 on the site, reports the data back to the Volttron Central historian
 running in the

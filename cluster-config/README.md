@@ -664,7 +664,7 @@ create a shell script file on `gateway-node` in `kube-volttron/cluster-config` c
 with the first line `#! /bin/bash` and copy the `kubeadm join` command into 
 it. Add `--cri-socket=unix:///var/run/containerd/containerd.sock` at the end of the second line, save and exit the editor.
 Make the file executable
-with `chmod a+x join.sh` so it can run as a shell script.
+with `chmod ug+x join.sh` so it can run as a shell script.
 
 To start using your cluster as a nonroot user, 
 you need to run the following as a regular user:

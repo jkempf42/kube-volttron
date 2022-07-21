@@ -857,9 +857,6 @@ Check for upstream connectivity:
 
 	ping google.com
 
-Once we have the Kubernetes cluster installed, we'll edit the CoreDNS ConfigMap
-to use the upstream resolver rather than `/etc/resolv.conf`.
-
 #### Editing CoreDNS ConfigMap to forward to upstream DNS
 
 We need to edit the CoreDNS ConfigMap so that it forwards to the upstream DNS rather than using `/etc/resolv.conf`
@@ -901,8 +898,6 @@ It should return something like:
 	;; ANSWER SECTION:
 	kube-dns.kube-system.svc.cluster.local.	30 IN A	10.96.0.10
 	...
-
-
 
 ###  Installing `gateway-node` as a worker node
 

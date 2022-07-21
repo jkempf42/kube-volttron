@@ -61,7 +61,7 @@ choose to use different versions:
 - flannel: 0.17.0
 - multus: 3.8
 
-The microservice-volttron container images were built from a deep fork of
+The `microservice-volttron` container images were built from a deep fork of
 the `volttron-docker` version 3.2 repo.
 
 ## Notes on the suitability of kube-volttron for production deployment.

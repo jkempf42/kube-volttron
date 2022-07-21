@@ -26,10 +26,9 @@ actual device and no additional Kubernetes objects.
 [BACnet protocol](http://www.bacnet.org/). This device requires
 the [simulated AHU device](https://github.com/bbartling/building-automation-web-weather), provided courtesy of Ben Bartling, incorporated here
 by copy as sim-AHU.py which is
-based on the [BAC0](https://bac0.readthedocs.io/en/latest/) package by Christian Tremblay. See below for more on how to deploy it. Device configuration for `sim-AHU.py` is baked into the `vbac` microservice. The `vbac` microservice 
+based on the [BAC0](https://bac0.readthedocs.io/en/latest/) package by Christian Tremblay. See below for more on how to deploy it. Device configuration for `sim-AHU.py` is provided by two Kubernetes ConfigMap objects. The `vbac` microservice 
 also requires additional network configuration an
-overview of which is is discussed in the next section, and additonal
-Kubernetes objects.
+overview of which is is discussed in the next section.
 
 ## BACnet gateway node network architecture
 

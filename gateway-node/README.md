@@ -228,8 +228,8 @@ The Kubernetes CNI handles additional pod interfaces though a
 NetworkAttachmentDefinition object. 
 Multus requires a network attachment point definition to configure the `vbac` 
 pod with the second interface. 
-The file `bacnet-net-attach-def.yml` contains an attachment definition for the
-gateway pod's second interface. Multus matches the value of the NetworkAttachmentDefinition 
+The file `bacnet-net-attach-def.yml` contains such an attachment definition. 
+Multus matches the value of the NetworkAttachmentDefinition 
 `name` in the `metaData` section (`bacnet` in this case) with a configuration item in 
 the bacnet Deployment pod spec for the second interface. The `config` value is a 
 JSON object providing the configuration for the second interface.

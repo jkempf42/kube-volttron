@@ -9,7 +9,7 @@ if [[ ! -e /etc/nginx/conf.d/kube.conf ]] ; then
     exit
 fi
 
-grep vcentral /etc/nginx/conf.d/kube.conf 2>1 1>/dev/null
+grep vcentral /etc/nginx/conf.d/kube.conf &>/dev/null
 RETURN=$?
 
 if [[ $RETURN -ne 0 ]]; then
@@ -18,12 +18,12 @@ fi
 
 # Wait until the API server comes up.
 
-curl -k https://vcentral.default.svc.cluster.local:8443 2>1 1>/dev/null
+curl -k https://vcentral.default.svc.cluster.local:8443 &>/dev/null
 RETURN=$?
 
 while [[ $RETURN -ne 0 ]]; do
 
-    curl -k https://vcentral.default.svc.cluster.local:8443 2>1 1>/dev/null
+    curl -k https://vcentral.default.svc.cluster.local:8443 &>/dev/null
     RETURN=$?
 
 done
